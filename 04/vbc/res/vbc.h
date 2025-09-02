@@ -18,7 +18,6 @@ typedef struct node {
     int val;
     struct node *l;
     struct node *r;
-	struct node *parent;
 }   node;
 
 node    *new_node(node n);
@@ -31,11 +30,8 @@ int		eval_tree(node *tree);
 //-----helpers.c-----//
 
 int		add_new_value(node *node, char c, bool left);
-bool	valid_next_char(char *s);
 bool	is_op(char c);
 int		is_p(char c);
-void	set_calc(node *n, char c, bool *l);
-int		new_depth(node *ret, node *cur, bool left, char c);
 
 
 #endif

@@ -1,15 +1,63 @@
 #include "vbc.h"
 
-node *parse_expression(char **s)
+static node *parse_expression(char **s)
 {
-	
+	node	*left;
+	node	*tmp;
+	node	*right;
+
+	left = parse_term(s);
+	if (!left)
+		return (NULL);
+	while(**s == '+')
+	{
+		(*s)++;
+		right = parse_term(s);
+		if (!right)
+			return (destroy_tree(left), NULL);
+		tmp = new_node((node){ADD, 0, left, right});
+		if (!tmp)
+			return (destroy_tree(left), destroy_tree(right), NULL);
+		left = tmp;
+	}
+	return (left);
 }
 
-node *parse_term(char **s)
-{}
+static node *parse_term(char **s)
+{
+	node	*left;
+	node	*tmp;
+	node	*right;
 
-node *parse_factor(char **s)
-{}
+	left = parse_factor(s);
+	if (!left)
+		return (NULL);
+	while(**s == '*')
+	{
+		(*s)++;
+		right = parse_factor(s);
+		if (!right)
+			return (destroy_tree(left), NULL);
+		tmp = new_node((node){MULTI, 0, left, right});
+		if (!tmp)
+			return (destroy_tree(left), destroy_tree(right), NULL);
+	}
+	return (left);
+}
+
+static node *parse_factor(char **s)
+{
+	node	*left = NULL;
+	node	*right;
+
+	if (is_p(**s))
+	{}
+	else if (isdigit(**s))
+	{}
+	else
+		return (left);
+
+}
 
 node	*parse_expr(char *s)
 {
