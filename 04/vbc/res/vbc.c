@@ -1,6 +1,6 @@
 #include "vbc.h"
 
-static node *parse_expression(char **s)
+static node	*parse_expression(char **s)
 {
 	node	*left;
 	node	*tmp;
@@ -9,7 +9,7 @@ static node *parse_expression(char **s)
 	left = parse_term(s);
 	if (!left)
 		return (NULL);
-	while(**s == '+')
+	while (**s == '+')
 	{
 		(*s)++;
 		right = parse_term(s);
@@ -23,7 +23,7 @@ static node *parse_expression(char **s)
 	return (left);
 }
 
-static node *parse_term(char **s)
+static node	*parse_term(char **s)
 {
 	node	*left;
 	node	*tmp;
@@ -32,7 +32,7 @@ static node *parse_term(char **s)
 	left = parse_factor(s);
 	if (!left)
 		return (NULL);
-	while(**s == '*')
+	while (**s == '*')
 	{
 		(*s)++;
 		right = parse_factor(s);
@@ -46,7 +46,7 @@ static node *parse_term(char **s)
 	return (left);
 }
 
-static node *parse_factor(char **s)
+static node	*parse_factor(char **s)
 {
 	node	*n;
 
@@ -89,11 +89,13 @@ node	*parse_expr(char *s)
 	return (ret);
 }
 
-int main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
+	node	*tree;
+
 	if (argc != 2)
 		return (1);
-	node *tree = parse_expr(argv[1]);
+	tree = parse_expr(argv[1]);
 	if (!tree)
 		return (1);
 	printf("%d\n", eval_tree(tree));

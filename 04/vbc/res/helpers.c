@@ -4,7 +4,7 @@ static node	*new_value(char c)
 {
 	node	*ret;
 
-	ret  = calloc(1, sizeof(node));
+	ret = calloc(1, sizeof(node));
 	if (!ret)
 		return (NULL);
 	ret->type = VAL;
@@ -27,4 +27,3 @@ int	is_p(char c)
 		return (2);
 	return (0);
 }
-
