@@ -32,7 +32,7 @@ int		eval_tree(node *tree);
 
 int		add_new_value(node *node, char c, bool left);
 bool	valid_next_char(char *s);
-bool	is_calc(char c);
+bool	is_op(char c);
 int		is_p(char c);
 void	set_calc(node *n, char c, bool *l);
 int		new_depth(node *ret, node *cur, bool left, char c);

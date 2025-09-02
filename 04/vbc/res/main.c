@@ -1,43 +1,41 @@
 #include "vbc.h"
 
-node    *parse_expr(char *s)
+node *parse_expression(char **s)
 {
-	node	*ret = NULL;
-	node	*cur = ret;
-	bool	left = true;
+	
+}
 
-	ret = calloc(1, sizeof(node));
-	if (!ret)
+node *parse_term(char **s)
+{}
+
+node *parse_factor(char **s)
+{}
+
+node	*parse_expr(char *s)
+{
+	char	*ptr;
+	node	*ret;
+
+	if (!*s)
 		return (NULL);
-	while (*s)
+	ptr = s;
+	ret = parse_expression(&ptr);
+	if (*s)
 	{
-		if (!valid_next_char(s))
-			break;
-		if (isdigit(*s) && add_new_value(cur, *s, left))
-			break;
-		else if (is_calc(*s) && set_calc(cur, *s, *left))
-			break;
-		else if (is_p(*s) && new_depth(ret, cur, left, *s))
-			break;
-		else
-			break;
-		s++;
+		destroy_tree(ret);
+		unexpected(*s);
+		return (NULL);
 	}
-    if (*s) 
-    {
-        destroy_tree(ret);
-        return (NULL);
-    }
-    return (ret);
+	return (ret);
 }
 
 int main(int argc, char **argv)
 {
-    if (argc != 2)
-        return (1);
-    node *tree = parse_expr(argv[1]);
-    if (!tree)
-        return (1);
-    printf("%d\n", eval_tree(tree));
-    destroy_tree(tree);
+	if (argc != 2)
+		return (1);
+	node *tree = parse_expr(argv[1]);
+	if (!tree)
+		return (1);
+	printf("%d\n", eval_tree(tree));
+	destroy_tree(tree);
 }
