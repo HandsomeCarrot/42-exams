@@ -2,13 +2,13 @@
 
 static node	*new_value(char c)
 {
-	node	*ret = calloc(1, sizeof(node));
+	node	*ret;
+
+	ret  = calloc(1, sizeof(node));
 	if (!ret)
 		return (NULL);
-
 	ret->type = VAL;
 	ret->val = ((int)c - (int)'0');
-	
 	return (ret);
 }
 

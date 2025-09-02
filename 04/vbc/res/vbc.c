@@ -41,22 +41,34 @@ static node *parse_term(char **s)
 		tmp = new_node((node){MULTI, 0, left, right});
 		if (!tmp)
 			return (destroy_tree(left), destroy_tree(right), NULL);
+		left = tmp;
 	}
 	return (left);
 }
 
 static node *parse_factor(char **s)
 {
-	node	*left = NULL;
-	node	*right;
+	node	*n;
 
-	if (is_p(**s))
-	{}
-	else if (isdigit(**s))
-	{}
-	else
-		return (left);
-
+	if (isdigit(**s))
+	{
+		n = new_value(**s);
+		(*s)++;
+		return (n);
+	}
+	else if (**s == '(')
+	{
+		(*s)++;
+		n = parse_expression(s);
+		if (**s == ')')
+		{
+			(*s)++;
+			return (n);
+		}
+	}
+	destroy_tree(n);
+	unexpected(**s);
+	return (NULL);
 }
 
 node	*parse_expr(char *s)
