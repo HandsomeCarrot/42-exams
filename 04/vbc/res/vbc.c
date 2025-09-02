@@ -1,41 +1,47 @@
 #include "vbc.h"
 
-static node	*parse_expression(char **s)
-{
-	node	*left;
-	node	*tmp;
-	node	*right;
+static node	*get_expression(char **s);
 
-	left = parse_term(s);
-	if (!left)
-		return (NULL);
-	while (**s == '+')
+static node	*get_factor(char **s)
+{
+	node	*n;
+
+	n = NULL;
+	if (isdigit(**s))
+	{
+		n = new_value(**s);
+		(*s)++;
+		return (n);
+	}
+	else if (**s == '(')
 	{
 		(*s)++;
-		right = parse_term(s);
-		if (!right)
-			return (destroy_tree(left), NULL);
-		tmp = new_node((node){ADD, 0, left, right});
-		if (!tmp)
-			return (destroy_tree(left), destroy_tree(right), NULL);
-		left = tmp;
+		n = get_expression(s);
+		if (**s == ')')
+		{
+			(*s)++;
+			return (n);
+		}
 	}
-	return (left);
+	destroy_tree(n);
+	if (!**s)
+		unexpected(**s);
+	return (NULL);
 }
 
-static node	*parse_term(char **s)
+static node	*get_term(char **s)
 {
 	node	*left;
 	node	*tmp;
 	node	*right;
 
-	left = parse_factor(s);
+	left = get_factor(s);
 	if (!left)
 		return (NULL);
 	while (**s == '*')
 	{
 		(*s)++;
-		right = parse_factor(s);
+		right = get_factor(s);
 		if (!right)
 			return (destroy_tree(left), NULL);
 		tmp = new_node((node){MULTI, 0, left, right});
@@ -46,40 +52,36 @@ static node	*parse_term(char **s)
 	return (left);
 }
 
-static node	*parse_factor(char **s)
+static node	*get_expression(char **s)
 {
-	node	*n;
+	node	*left;
+	node	*tmp;
+	node	*right;
 
-	if (isdigit(**s))
-	{
-		n = new_value(**s);
-		(*s)++;
-		return (n);
-	}
-	else if (**s == '(')
+	left = get_term(s);
+	if (!left)
+		return (NULL);
+	while (**s == '+')
 	{
 		(*s)++;
-		n = parse_expression(s);
-		if (**s == ')')
-		{
-			(*s)++;
-			return (n);
-		}
+		right = get_term(s);
+		if (!right)
+			return (destroy_tree(left), NULL);
+		tmp = new_node((node){ADD, 0, left, right});
+		if (!tmp)
+			return (destroy_tree(left), destroy_tree(right), NULL);
+		left = tmp;
 	}
-	destroy_tree(n);
-	unexpected(**s);
-	return (NULL);
+	return (left);
 }
 
 node	*parse_expr(char *s)
 {
-	char	*ptr;
 	node	*ret;
 
 	if (!*s)
 		return (NULL);
-	ptr = s;
-	ret = parse_expression(&ptr);
+	ret = get_expression(&s);
 	if (*s)
 	{
 		destroy_tree(ret);

@@ -28,25 +28,7 @@ void	unexpected(char c)
 	if (c)
 		printf("Unexpected token '%c'\n", c);
 	else
-		printf("Unexpected end of file\n");
-}
-
-int	accept(char **s, char c)
-{
-	if (**s)
-	{
-		(*s)++;
-		return (1);
-	}
-	return (0);
-}
-
-int	expect(char **s, char c)
-{
-	if (accept(s, c))
-		return (1);
-	unexpected(**s);
-	return (0);
+		printf("Unexpected end of input\n");
 }
 
 int	eval_tree(node *tree)

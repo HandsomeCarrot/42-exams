@@ -1,6 +1,6 @@
 #include "vbc.h"
 
-static node	*new_value(char c)
+node	*new_value(char c)
 {
 	node	*ret;
 

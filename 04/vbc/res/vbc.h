@@ -25,13 +25,11 @@ typedef struct node
 node			*new_node(node n);
 void			destroy_tree(node *n);
 void			unexpected(char c);
-int				accept(char **s, char c);
-int				expect(char **s, char c);
 int				eval_tree(node *tree);
 
 //-----helpers.c-----//
 
-static node		*new_value(char c);
+node			*new_value(char c);
 bool			is_op(char c);
 int				is_p(char c);
 
