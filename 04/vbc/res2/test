@@ -1,7 +1,19 @@
 #!/bin/bash
 
+# ANSI color codes
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+YELLOW='\033[0;33m'
+NC='\033[0m'  # No Color
+
 # Build the program
-make re
+echo -e "${YELLOW}Building program...${NC}"
+if make re > /dev/null 2>&1; then
+    echo -e "${GREEN}Compilation successful.${NC}"
+else
+    echo -e "${RED}Compilation failed. Exiting.${NC}"
+    exit 1
+fi
 
 # Define test cases
 expressions=(
@@ -62,16 +74,16 @@ for i in "${!expressions[@]}"; do
     # Trim trailing newline if present
     output=$(echo "$output" | sed 's/[[:space:]]*$//')
     if [ "$output" == "$expected" ]; then
-        echo "Test $((i+1)): PASS"
+        echo -e "Test $((i+1)): ${GREEN}PASS${NC}"
         ((passed++))
     else
-        echo "Test $((i+1)): FAIL (Expected: $expected, Got: $output)"
+        echo -e "Test $((i+1)): ${RED}FAIL${NC} (Expected: $expected, Got: $output)"
         ((failed++))
     fi
 done
 
 # Print summary
 echo ""
-echo "Summary:"
-echo "Passed: $passed"
-echo "Failed: $failed"
+echo -e "${YELLOW}Summary:${NC}"
+echo -e "${GREEN}Passed: $passed${NC}"
+echo -e "${RED}Failed: $failed${NC}"
