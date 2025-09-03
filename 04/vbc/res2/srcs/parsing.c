@@ -6,7 +6,7 @@
 /*   By: vpoka <vpoka@student.42vienna.com>         +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2025/09/03 20:44:53 by vpoka             #+#    #+#             */
-/*   Updated: 2025/09/03 20:44:54 by vpoka            ###   ########.fr       */
+/*   Updated: 2025/09/03 20:46:39 by vpoka            ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -16,7 +16,6 @@ static node	*parse_add(char **s);
 
 static node	*parse_num(char **s)
 {
-	static int	depth = 0;
 	node		*ret;
 	int			num;
 
