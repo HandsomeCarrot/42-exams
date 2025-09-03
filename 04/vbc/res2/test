@@ -9,7 +9,7 @@ NC='\033[0m'  # No Color
 # Build the program
 echo -e "${YELLOW}Building program...${NC}"
 if make re > /dev/null 2>&1; then
-    echo -e "${GREEN}Compilation successful.${NC}"
+    echo -e "${GREEN}Compilation successful.${NC}\n"
 else
     echo -e "${RED}Compilation failed. Exiting.${NC}"
     exit 1
