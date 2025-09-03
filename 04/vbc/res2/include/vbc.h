@@ -1,6 +1,10 @@
 #ifndef VBC_H
 # define VBC_H
 
+# ifndef DEBUG
+#  define DEBUG 0
+# endif
+
 # include <ctype.h>
 # include <stdio.h>
 # include <stdlib.h>
