@@ -1,4 +1,4 @@
-#include "vbc.h"
+#include "../include/vbc.h"
 
 static node	*parse_num(char **s)
 {

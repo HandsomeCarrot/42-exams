@@ -1,4 +1,4 @@
-#include "vbc.h"
+#include "../include/vbc.h"
 
 node    *new_node(node n)
 {

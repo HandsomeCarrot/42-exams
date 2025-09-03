@@ -1,4 +1,4 @@
-#include "vbc.h"
+#include "../include/vbc.h"
 
 int main(int argc, char **argv)
 {
