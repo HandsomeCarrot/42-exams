@@ -1,61 +1,63 @@
 #include "../include/vbc.h"
 
-node    *new_node(node n)
+node	*new_node(node n)
 {
-    node *ret = calloc(1, sizeof(n));
-    if (!ret)
-        return (NULL);
-    *ret = n;
-    return (ret);
+	node	*ret;
+
+	ret = calloc(1, sizeof(n));
+	if (!ret)
+		return (NULL);
+	*ret = n;
+	return (ret);
 }
 
-void    destroy_tree(node *n)
+void	destroy_tree(node *n)
 {
-    if (!n)
-        return ;
-    if (n->type != VAL)
-    {
-        destroy_tree(n->l);
-        destroy_tree(n->r);
-    }
-    free(n);
+	if (!n)
+		return ;
+	if (n->type != VAL)
+	{
+		destroy_tree(n->l);
+		destroy_tree(n->r);
+	}
+	free(n);
 }
 
-void    unexpected(char c)
+void	unexpected(char c)
 {
-    if (c)
-        printf("Unexpected token '%c'\n", c);
-    else
-        printf("Unexpected end of input\n");
+	if (c)
+		printf("Unexpected token '%c'\n", c);
+	else
+		printf("Unexpected end of input\n");
 }
 
-int accept(char **s, char c)
+int	accept(char **s, char c)
 {
-    if (**s == c)
-    {
-        (*s)++;
-        return (1);
-    }
-    return (0);
+	if (**s == c)
+	{
+		(*s)++;
+		return (1);
+	}
+	return (0);
 }
 
-int expect(char **s, char c)
+int	expect(char **s, char c)
 {
-    if (accept(s, c))
-        return (1);
-    unexpected(**s);
-    return (0);
+	if (accept(s, c))
+		return (1);
+	unexpected(**s);
+	return (0);
 }
 
-int eval_tree(node *tree)
+int	eval_tree(node *tree)
 {
-    switch (tree->type)
-    {
-        case ADD:
-            return (eval_tree(tree->l) + eval_tree(tree->r));
-        case MULTI:
-            return (eval_tree(tree->l) * eval_tree(tree->r));
-        case VAL:
-            return (tree->val);
-    }
+	switch (tree->type)
+	{
+	case ADD:
+		return (eval_tree(tree->l) + eval_tree(tree->r));
+	case MULTI:
+		return (eval_tree(tree->l) * eval_tree(tree->r));
+	case VAL:
+		return (tree->val);
+	}
 }

@@ -1,12 +1,14 @@
 #include "../include/vbc.h"
 
-int main(int argc, char **argv)
+int	main(int argc, char **argv)
 {
-    if (argc != 2)
-        return (1);
-    node *tree = parse_add(argv + 1);
-    if (!tree)
-        return (1);
-    printf("%d\n", eval_tree(tree));
-    destroy_tree(tree);
+	node	*tree;
+
+	if (argc != 2)
+		return (1);
+	tree = parse_add(argv + 1);
+	if (!tree)
+		return (1);
+	printf("%d\n", eval_tree(tree));
+	destroy_tree(tree);
 }

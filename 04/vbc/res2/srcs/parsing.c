@@ -51,13 +51,7 @@ node	*parse_add(char **s)
 
 	ret = parse_multi(s);
 	if (ret == NULL)
-	{
-		//if (**s)
-			//unexpected(**s);
-		//else
-			//unexpected(0);
 		return (NULL);
-	}
 	while (accept(s, '+'))
 	{
 		tmp = parse_multi(s);
