@@ -17,14 +17,14 @@ static node	*parse_num(char **s)
 		(*s)++;
 		return (ret);
 	}
-	else if (expect(s, '('))
+	else if (accept(s, '('))
 	{
 		if (DEBUG == 1)
 			printf("went DEEPER. Now at: %d\n", ++depth);
 		ret = parse_add(s);
 		if (ret == NULL)
 			return (NULL);
-		if (expect(s, ')'))
+		if (accept(s, ')'))
 		{
 			if (DEBUG == 1)
 				printf("went BACK. Now at: %d\n", --depth);
@@ -33,6 +33,8 @@ static node	*parse_num(char **s)
 	}
 	if (DEBUG == 1)
 		printf("failed at parse_num\n");
+	if (!**s)
+		unexpected(0);
 	return (NULL);
 }
 
