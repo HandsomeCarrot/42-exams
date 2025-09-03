@@ -26,7 +26,7 @@ void    unexpected(char c)
     if (c)
         printf("Unexpected token '%c'\n", c);
     else
-        printf("Unexpected end of file\n");
+        printf("Unexpected end of input\n");
 }
 
 int accept(char **s, char c)
