@@ -31,6 +31,5 @@ int				eval_tree(node *tree);
 //-----parsing.c-----//
 
 node			*parse(char **s);
-node			*parse_add(char **s);
 
 #endif

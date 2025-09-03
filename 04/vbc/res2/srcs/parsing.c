@@ -52,7 +52,7 @@ static node	*parse_multi(char **s)
 	return (ret);
 }
 
-node	*parse_add(char **s)
+static node	*parse_add(char **s)
 {
 	node	*ret;
 	node	*tmp;
