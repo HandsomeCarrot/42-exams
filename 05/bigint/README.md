@@ -1,7 +1,13 @@
-# bigint
+# bigint (wip)
+## toc
+- [subject](#subject)
+- [file structure](#file-structure)
+- [usage](#usage)
 ## subject
 Assignment name : bigint
+
 Expected files : bigint.hpp, bigint.cpp
+
 
 In computer science a bignum is an object representing an arbitrary precision
 number, this is useful when you want to store a number bigger than SIZE_MAX
@@ -9,6 +15,7 @@ without any loss of precision. This is often achieved by storing an array or a
 string containing the different "parts" of the number.
 Create a class called bigint that will store an arbitrary precision unsigned
 integer.
+
 Your class must support addition, comparison and "digitshift" (like bitshift but
 instead of shifting the bits you will shift the digits in base 10, e.g.:
 (42 << 3 == 42000) and (1337 >> 2 == 13)).
