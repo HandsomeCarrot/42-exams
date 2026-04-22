@@ -1,6 +1,10 @@
 # POLYSET
+## toc
+- [subject](#subject)
+- [file structure](#file-structure)
+- [usage](#usage)
 ## subject
-Assigment name: Polyset
+Assigment name: Polyset |
 Expected File: searchable_array_bag.cpp, searchable_array_bag.hpp,
 searchable_tree_bg.cpp, searchable_tree_bag.hpp, set.cpp, set.hpp
 
