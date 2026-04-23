@@ -1,9 +1,8 @@
 #include "bigint.hpp"
-#include <cstddef>
+#include <cstdio>
 #include <iostream>
-#include <iterator>
 
-bigint::bigint(void) : _bigint(1)
+bigint::bigint(void) : _bigint(0)
 {
 	std::cerr << "default constructor" << std::endl;
 }
@@ -18,7 +17,7 @@ bigint::bigint(unsigned int value) : _bigint(0)
 {
 	std::cerr << "parameterized constructor (uint)" << std::endl;
 
-	for (; value > 10; value /= 10)
+	for (; value > 9; value /= 10)
 		_bigint.push_back((value % 10));
 	_bigint.push_back(value);
 }
@@ -49,16 +48,15 @@ bigint & bigint::operator=(const bigint & other)
 bigint bigint::operator+(const bigint & right) const
 {
 	bigint result;
-
 	int carry = 0;
-	std::size_t this_size = this->_bigint.size();
-	std::size_t right_size = right._bigint.size();
+	size_type left_size = this->_bigint.size();
+	size_type right_size = right._bigint.size();
 
-	for (std::size_t i = 0; i < this_size || i < right_size; ++i)
+	for (size_type i = 0; i < left_size || i < right_size; ++i)
 	{
 		unsigned int current_digit = carry;
 
-		if (i < this_size)
+		if (i < left_size)
 			current_digit += this->_bigint.at(i);
 		if (i < right_size)
 			current_digit += right._bigint.at(i);
@@ -66,70 +64,142 @@ bigint bigint::operator+(const bigint & right) const
 		carry = current_digit / 10;
 		current_digit %= 10;
 
-		if (i == 0)
-			result._bigint[0] = current_digit;
-		else
-			result._bigint.push_back(current_digit);
+		result._bigint.push_back(current_digit);
 	}
 	return (result);
 }
 
 bigint bigint::operator++(int)
 {
-	return (bigint());
+	bigint copy(*this);
+
+	*this = *this + 1;
+
+	return (copy);
 }
 
 bigint & bigint::operator++(void)
 {
+	*this = *this + 1;
+
 	return (*this);
 }
 
 bigint & bigint::operator+=(const bigint & right)
 {
-	(void)right;
+	*this = *this + right;
+
 	return (*this);
 }
 
 bool bigint::operator==(const bigint & right) const
 {
-	(void)right;
-	return (false);
+	if (this->_bigint.size() != right._bigint.size())
+		return (false);
+
+	for (size_type i = 0; i < _bigint.size(); ++i)
+	{
+		if (this->_bigint.at(i) != right._bigint.at(i))
+			return (false);
+	}
+
+	return (true);
 }
 
 bool bigint::operator!=(const bigint & right) const
 {
-	(void)right;
+	if (this->_bigint.size() != right._bigint.size())
+		return (true);
+
+	for (size_type i = 0; i < _bigint.size(); ++i)
+	{
+		if (this->_bigint.at(i) != right._bigint.at(i))
+			return (true);
+	}
+
 	return (false);
 }
 
 bool bigint::operator< (const bigint & right) const
 {
-	(void)right;
+	if (this->_bigint.size() < right._bigint.size())
+		return (true);
+
+	if (this->_bigint.size() > right._bigint.size())
+		return (false);
+
+	for (size_type i = _bigint.size(); i != 0; --i)
+	{
+		if (this->_bigint.at(i) < right._bigint.at(i))
+			return (true);
+		else if (this->_bigint.at(i) < right._bigint.at(i))
+			return (false);
+	}
+
 	return (false);
 }
 
 bool bigint::operator<=(const bigint & right) const
 {
-	(void)right;
-	return (false);
+	if (this->_bigint.size() < right._bigint.size())
+		return (true);
+
+	if (this->_bigint.size() > right._bigint.size())
+		return (false);
+
+	for (size_type i = _bigint.size(); i != 0; --i)
+	{
+		if (this->_bigint.at(i) < right._bigint.at(i))
+			return (true);
+		else if (this->_bigint.at(i) < right._bigint.at(i))
+			return (false);
+	}
+
+	return (true);
 }
 
 bool bigint::operator>(const bigint & right) const
 {
-	(void)right;
+	if (this->_bigint.size() < right._bigint.size())
+		return (false);
+
+	if (this->_bigint.size() > right._bigint.size())
+		return (true);
+
+	for (size_type i = _bigint.size(); i != 0; --i)
+	{
+		if (this->_bigint.at(i) < right._bigint.at(i))
+			return (false);
+		else if (this->_bigint.at(i) < right._bigint.at(i))
+			return (true);
+	}
+
 	return (false);
 }
 
 bool bigint::operator>=(const bigint & right) const
 {
-	(void)right;
-	return (false);
+	if (this->_bigint.size() < right._bigint.size())
+		return (false);
+
+	if (this->_bigint.size() > right._bigint.size())
+		return (true);
+
+	for (size_type i = _bigint.size(); i != 0; --i)
+	{
+		if (this->_bigint.at(i) < right._bigint.at(i))
+			return (false);
+		else if (this->_bigint.at(i) < right._bigint.at(i))
+			return (true);
+	}
+
+	return (true);
 }
 
 bigint bigint::operator<<(const bigint & shift) const
 {
-	(void)shift;
-	return (bigint());
+	for (bigint i = 0; i < shift; ++i)
+		this->_bigint.push_front(0);
 }
 
 bigint bigint::operator>>(const bigint & shift) const
@@ -152,16 +222,19 @@ bigint & bigint::operator>>=(const bigint & shift)
 
 std::string bigint::getAsString(void) const
 {
+	if (_bigint.empty())
+		return ("");
+
 	std::string str;
 
-	for (std::size_t i = 0; i < _bigint.size(); ++i)
+	for (size_type i = 0; i < _bigint.size(); ++i)
 		str.insert(str.begin(), 1, '0' + _bigint[i]);
 
 	return (str);
 }
 
-std::ostream & operator<<(std::ostream & os, const bigint & ubint)
+std::ostream & operator<<(std::ostream & os, const bigint & object)
 {
-	os << ubint.getAsString();
+	os << object.getAsString();
 	return os;
 }

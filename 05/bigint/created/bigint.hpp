@@ -1,15 +1,15 @@
 #ifndef BIGINT_HPP
 #define BIGINT_HPP
 
-#include <cstddef>
 #include <string>
-#include <vector>
+#include <deque>
 #include <iostream>
 
 class bigint
 {
 	public:
-		typedef std::vector<unsigned int> t_bigint;
+		typedef std::deque<unsigned int> t_bigint;
+		typedef t_bigint::size_type size_type;
 
 	protected:
 		t_bigint _bigint;
@@ -57,6 +57,6 @@ class bigint
 
 // ---------- stream operator ----------//
 
-std::ostream & operator<<(std::ostream & os, const bigint & ubint);
+std::ostream & operator<<(std::ostream & os, const bigint & object);
 
 #endif /* BIGINT_HPP */
