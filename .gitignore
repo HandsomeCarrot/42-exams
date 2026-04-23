@@ -1,4 +1,10 @@
 *.swp
 *.o
+compile_flags.txt
+
+# exam 04
 04/vbc/res2/vbc
 04/vbc/res/vbc
+
+# exam 05
+test
