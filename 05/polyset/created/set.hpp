@@ -8,6 +8,7 @@ class set : public searchable_bag
 	protected:
 		searchable_bag * _bag;
 
+		set(void) : _bag(0) {};
 	public:
 		set(searchable_bag & bag) : _bag(&bag) {};
 
