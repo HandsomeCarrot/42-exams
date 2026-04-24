@@ -30,7 +30,6 @@ The first line of the map contains information on how to read the map:
 	The aim of the program is to replace '"empty" characters' by '"full" characters' in order to represent the biggest square possible.
 	In the case that more than one solution exists, we'll choose to represent the square that's closest to the top of the map, then the one that's most to the left.
 
-When your program receives more than one map in argument, each solution or "Error: invalid map" must be followed by a line break.
 Should there be no passed arguments, your program must be able to read on the standard input.
 
 Definition of a valid map :
