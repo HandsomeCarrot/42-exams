@@ -1,32 +1,35 @@
 #ifndef MAIN_H
 #define MAIN_H
 
-typedef enum e_tile
-{
-	EMPTY_TILE,
-	OBSTACLE_TILE,
-	FULL_TILE
-} t_tile;
+#define SUCCESS 1
+#define FAILURE 0
 
-typedef struct s_map
+struct s_tile
+{
+	char empty;
+	char obstacle;
+	char full;
+};
+
+struct s_map
 {
 	char ** layout;
-	char * tiles;
 	int width;
 	int height;
-} t_map;
+};
 
-typedef struct s_square
+struct s_square
 {
 	int size;
 	int x;
 	int y;
-} t_square;
+};
 
 typedef struct s_data
 {
-	t_map map;
-	t_square square;
+	struct s_map map;
+	struct s_tile tiles;
+	struct s_square square;
 } t_data;
 
 #endif

@@ -1,116 +1,111 @@
-#include "main.h"
-#include <stddef.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include "main.h"	//t_data, SUCCESS/FAILURE
+#include <stdio.h>	//fscanf, FILE, fprintf, stdout, stdin
+#include <stdlib.h>	//EXIT_SUCCES, EXIT_FAILURE
 
-// int ftStrlen(char * str)
-// {
-// 	if (!str || !*str)
-// 		return (0);
+/**
+ * @return FAILURE/SUCCESS
+ */
+int isPrint(char c)
+{
+	if (c >= 33 && c <= 126)
+		return (SUCCESS);
+	printf("fail: isPrint\n"); //remove
+	return (FAILURE);
+}
 
-// 	int count = 0;
-// 	while (str[count])
-// 		++count;
+/**
+ * @return FAILURE/SUCCESS
+ */
+int isNum(char c)
+{
+	if (c >= '0' && c <= '9')
+		return (SUCCESS);
+	printf("fail: isNum\n"); //remove
+	return (FAILURE);
+}
 
-// 	return (count);
-// }
+/**
+ * @return FAILURE/SUCCESS
+ */
+int getNextChar(char * c, FILE * stream)
+{
+	if (fscanf(stream, "%c", c) != 1)
+	{
+		printf("fail: getNextChar\n"); //remove
+		return (FAILURE);
+	}
 
-// int validFirstLine(t_data * data)
-// {
-// 	if (data->map.height < 1)
-// 		return (0);
+	return (SUCCESS);
+}
 
-// 	char * tiles = data->map.tiles;
-// 	if (ftStrlen(tiles) != 3
-// 		|| tiles[EMPTY_TILE] == tiles[OBSTACLE_TILE]
-// 		|| tiles[EMPTY_TILE] == tiles[FULL_TILE]
-// 		|| tiles[OBSTACLE_TILE] == tiles[FULL_TILE])
-// 		return (0);
+/**
+ * @return '-1' if something goes wrong, '>= 0' if successful
+ */
+int getNumber(char * last_char, FILE * stream)
+{
+	int result = 0;
 
-// 	return (1);
-// }
+	while (getNextChar(last_char, stream) == SUCCESS)
+	{
+		if (!isNum(*last_char))
+			break ;
 
-// int countDigits(int i)
-// {
-// 	int digits = 1;
-// 	for (; i > 9; i /= 10)
-// 		++digits;
-// 	return (digits);
-// }
+		result = result * 10 + (int)(*last_char - '0');
 
-// char * getNextLine(void)
-// {
-// 	char * line = NULL;
-// 	size_t line_len = 0;
-// 	ssize_t read_chars = 0;
+		if (result < 0)
+		{
+			printf("fail: getNumber\n"); //remove
+			return (-1);
+		}
+	}
 
-// 	if ((read_chars = getline(&line, &line_len, stdin)) == -1)
-// 	{
-// 		if (line)
-// 			free(line);
-// 		return (NULL);
-// 	}
+	return (result);
+}
 
-// 	return (line);
-// }
+/**
+ * @return FAILURE/SUCCESS
+ */
+int validFirstLine(FILE * stream, t_data * data)
+{
+	if (!stream)
+	{
 
-// int main(int argc, char ** argv)
-// {
-// 	/*if (argc == 2)
-// 	{
-// 		t_data data;
-// 		data.map.tiles = argv[1];
-// 		data.map.height = 1;
+		return (FAILURE);
+	}
 
-// 		if (!valid_first_line(&data))
-// 			fprintf(stdout, "Error: invalid map\n");
-// 	}*/
+	char newline;
 
-// 	// int i;
-// 	// char a;
-// 	// char b;
-// 	// char c;
-// 	// char d;
-// 	// int read_chars;
+	data->map.height = getNumber(&data->tiles.empty, stream); //get map height and the 'empty' char
 
-// 	// int ret = fscanf(stdin, "%d%c%c%c%c%n", &i, &a, &b, &c, &d, &read_chars);
-// 	// int expected_char_count = 4 + countDigits(i);
+	if (data->map.height <= 0													//check valid game height
+		|| !isPrint(data->tiles.empty)										//check for valid char (empty)
+		|| getNextChar(&data->tiles.obstacle, stream) == FAILURE				//get char (obstacle)
+		|| !isPrint(data->tiles.obstacle)									//check for valid char (obstacle)
+		|| data->tiles.empty == data->tiles.obstacle							//check for duplicate character ('empty' & 'obstacle')
+		|| getNextChar(&data->tiles.full, stream) == FAILURE					//get char (full)
+		|| !isPrint(data->tiles.full)										//check for valid char (full)
+		|| data->tiles.empty == data->tiles.full								//check for duplicate character ('empty' & 'full')
+		|| data->tiles.obstacle == data->tiles.full								//check for duplicate character ('obstacle' & 'full')
+		|| getNextChar(&newline, stream) == FAILURE							//get next character
+		|| newline != '\n')														//has to be a newline character, otherwise map is invalid
+	{
+		printf("fail: validFirstLine\n"); //remove
+		return (FAILURE);
+	}
 
-// 	// if (ret != 5 || d != '\n' || expected_char_count != read_chars || i <= 0) //TODO: also need to check, here or later, if characters are printable (no whitespace characters and so on).
-// 	// {
-// 	// 	printf("ret: %d | read count: %d | calc count: %d\n", ret, read_chars, expected_char_count);
-// 	// 	fprintf(stdout, "Error: invalid map\n");
-// 	// 	return 1;
-// 	// }
-
-// 	// printf("ret: %d | int(digits): %d(%d) | '%c', '%c', '%c' | count: %u\n", ret, i, countDigits(i), a, b, c, read_chars);
-
-// 	int iters = 0;
-
-// 	while(1)
-// 	{
-// 		++iters;
-// 		printf("iter: %d\n", iters);
-
-// 		char * line = getNextLine();
-
-// 		if (!line)
-// 		{
-// 			printf("Error: invalid map\n");
-// 			return (EXIT_FAILURE);
-// 		}
-
-// 		if (ftStrlen(line) == )
-
-// 		/* --- CLEANUP --- */
-
-// 		free(line);
-// 	}
-
-// 	return (EXIT_SUCCESS);
-// }
+	return (SUCCESS);
+}
 
 int main(int argc, char ** argv)
 {
+	t_data data;
+
+	if (argc == 1)
+	{
+		if (validFirstLine(stdin, &data) == FAILURE)
+			fprintf(stdout, "Error: map invalid\n");
+	}
+
+	printf("success\n"); //remove
 	return EXIT_SUCCESS;
 }
