@@ -23,7 +23,7 @@ clean:
 	rm -rf $(B)
 
 fclean: clean
-	rm -rd $(NAME)
+	rm -rf $(NAME)
 
 re: fclean all
 
