@@ -1,6 +1,7 @@
 #include "main.h"	//t_data, SUCCESS/FAILURE
 #include <stdio.h>	//fscanf, FILE, fprintf, stdout, stdin
 #include <stdlib.h>	//EXIT_SUCCES, EXIT_FAILURE
+#include <time.h>
 
 /**
  * @return FAILURE/SUCCESS
@@ -9,7 +10,7 @@ int isPrint(char c)
 {
 	if (c >= 33 && c <= 126)
 		return (SUCCESS);
-	printf("fail: isPrint\n"); //remove
+	printf("fail: isPrint: '%c'\n", c); //remove
 	return (FAILURE);
 }
 
@@ -20,7 +21,7 @@ int isNum(char c)
 {
 	if (c >= '0' && c <= '9')
 		return (SUCCESS);
-	printf("fail: isNum\n"); //remove
+	printf("fail: isNum: '%c'\n", c); //remove
 	return (FAILURE);
 }
 
@@ -54,7 +55,7 @@ int getNumber(char * last_char, FILE * stream)
 
 		if (result < 0)
 		{
-			printf("fail: getNumber\n"); //remove
+			printf("fail: getNumber: overflow\n"); //remove
 			return (-1);
 		}
 	}
@@ -69,13 +70,13 @@ int validFirstLine(FILE * stream, t_data * data)
 {
 	if (!stream)
 	{
-
+		printf("fail: validFirstLine: no stream\n"); //remove
 		return (FAILURE);
 	}
 
 	char newline;
 
-	data->map.height = getNumber(&data->tiles.empty, stream); //get map height and the 'empty' char
+	data->map.height = getNumber(&data->tiles.empty, stream);		//get map height and the 'empty' char
 
 	if (data->map.height <= 0													//check valid game height
 		|| !isPrint(data->tiles.empty)										//check for valid char (empty)
@@ -89,9 +90,11 @@ int validFirstLine(FILE * stream, t_data * data)
 		|| getNextChar(&newline, stream) == FAILURE							//get next character
 		|| newline != '\n')														//has to be a newline character, otherwise map is invalid
 	{
-		printf("fail: validFirstLine\n"); //remove
+		printf("fail: validFirstLine: invalid format\n"); //remove
 		return (FAILURE);
 	}
+
+	printf("[INFO] map height: %d | chars(empty,obstacle,full): '%c', '%c', '%c'\n", data->map.height, data->tiles.empty, data->tiles.obstacle, data->tiles.full);
 
 	return (SUCCESS);
 }
@@ -103,7 +106,10 @@ int main(int argc, char ** argv)
 	if (argc == 1)
 	{
 		if (validFirstLine(stdin, &data) == FAILURE)
+		{
 			fprintf(stdout, "Error: map invalid\n");
+			return (EXIT_FAILURE);
+		}
 	}
 
 	printf("success\n"); //remove
