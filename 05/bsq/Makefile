@@ -1,7 +1,7 @@
 NAME := test
 
 CC := cc
-CFLAGS := -fsanitize=address,undefined,leak -g #-Wall -Wextra -Werror
+CFLAGS := -fsanitize=address,undefined,leak -g -Wall -Wextra -Werror
 INCLUDE := -Icreated
 COMP := $(CC) $(CFLAGS) $(INCLUDE)
 
