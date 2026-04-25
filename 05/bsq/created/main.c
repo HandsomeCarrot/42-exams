@@ -110,9 +110,16 @@ int validFirstLine(FILE * stream, t_data * data)
 
 	char * first_line = NULL;
 
-	if (getNextLine(&first_line, stream) == FAILURE || ftStrLen(first_line) < 5) //if gnl fails, or first line is smaller than 5 (1 num, 3 chars, 1 newline) characters -> fail
+	if (getNextLine(&first_line, stream) == FAILURE)
 	{
 		printf("[FAIL] ValidFirstLine: gnl\n");
+		return (FAILURE);
+	}
+
+	if (ftStrLen(first_line) < 5)												//check line length (1 num, 3 chars, 1 newline), not more/less
+	{
+		free(first_line);
+		printf("[FAIL] ValidFirstLine: too short\n");
 		return (FAILURE);
 	}
 
@@ -142,18 +149,82 @@ int validFirstLine(FILE * stream, t_data * data)
 	return (SUCCESS);
 }
 
-// int validMap(FILE * stream, t_data * data)
-// {
-// 	data->map.layout = calloc(data->map.height, sizeof(char *));
+/**
+ * @return SUCCESS/FAILURE
+ */
+int validMapCharacters(char * line, struct s_tile * tiles)
+{
+	for (int i = 0; line[i + 1]; ++i)
+	{
+		if (line[i] != tiles->empty && line[i] != tiles->obstacle)
+			return (FAILURE);
+	}
+	return (SUCCESS);
+}
 
-// 	for (int i = 0; i < data->map.height; ++i)
-// 	{
-// 		if (getNextLine(data->map.layout[i], stream) == FAILURE)
-// 			return (FAILURE);
-// 	} //TODO: validate line lengths, characters used, last line / line after last map line (last line has to be empty)
-// 	return (SUCCESS);
-// }
+/**
+ * @return SUCCESS/FAILURE
+ */
+int validMap(FILE * stream, t_data * data)
+{
+	data->map.layout = calloc(data->map.height, sizeof(char *));
+	char ** layout = data->map.layout;
 
+	for (int i = 0; i < data->map.height; ++i)
+	{
+		if (getNextLine(&layout[i], stream) == FAILURE)
+		{
+			printf("[FAIL] validMap: gnl failed\n"); //remove
+			return (FAILURE);
+		}
+
+		int current_width = ftStrLen(layout[i]);
+
+		if (layout[i][current_width - 1] != '\n' || current_width <= 1)
+		{
+			printf("[FAIL] validMap: (does not end with / only has) a newline\n"); //remove
+			return (FAILURE);
+		}
+
+		if (i == 0)
+			data->map.width = current_width - 1;
+		else if ((current_width - 1) != data->map.width)
+		{
+			printf("[FAIL] validMap: line lengths do not match\n"); //remove
+			return (FAILURE);
+		}
+
+		if (validMapCharacters(layout[i], &data->tiles) == FAILURE)
+		{
+			printf("[FAIL] validMap: invalid character detected\n"); //remove
+			return (FAILURE);
+		}
+	}
+	return (SUCCESS);
+}
+
+/**
+ * @brief frees map
+ */
+void freeMap(t_data * data)
+{
+	if (data->map.layout)
+	{
+		for (int i = 0; i < data->map.height; ++i)
+		{
+			if (data->map.layout[i])
+				free(data->map.layout[i]);
+		}
+		free(data->map.layout);
+	}
+}
+
+/**
+ * TODO: check for minimum map size (at least one line with 1? 'empty' char)
+ * TODO: find biggest square
+ * TODO: modifie map to have bsq marked
+ * TODO: print map
+ */
 int main(int argc, char ** argv)
 {
 	(void)argv;
@@ -161,14 +232,17 @@ int main(int argc, char ** argv)
 
 	if (argc == 1)
 	{
-		if (validFirstLine(stdin, &data) == FAILURE)
-			// || validMap(stdin, &data) == FAILURE)
+		if (validFirstLine(stdin, &data) == FAILURE
+			|| validMap(stdin, &data) == FAILURE)
 		{
 			fprintf(stdout, "Error: map invalid\n");
+			freeMap(&data);
 			return (EXIT_FAILURE);
 		}
 	}
 
 	printf("[INFO] success\n"); //remove
+	freeMap(&data);
+
 	return EXIT_SUCCESS;
 }
