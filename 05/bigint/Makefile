@@ -1,11 +1,11 @@
 NAME := test
 
 CXX := c++
-CXXFLAGS := -g -fsanitize=address,undefined,leak #-Wall -Wextra -Werror -std=c++98
+CXXFLAGS := -g -fsanitize=address,undefined,leak -Wall -Wextra -Werror -std=c++98
 INCLUDE := -Icreated -Igiven
 COMP := $(CXX) $(CXXFLAGS) $(INCLUDE)
 
-SRCS :=	test_main.cpp \
+SRCS :=	given/main.cpp \
 		created/bigint.cpp
 
 B := build
