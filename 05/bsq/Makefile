@@ -5,7 +5,7 @@ CFLAGS := -fsanitize=address,undefined,leak -g -Wall -Wextra -Werror
 INCLUDE := -Icreated
 COMP := $(CC) $(CFLAGS) $(INCLUDE)
 
-SRCS :=	created/main.c
+SRCS :=	created/main.c created/utils.c created/map_validation.c created/bsq_solver.c
 
 B := build
 OBJS := $(SRCS:%.c=$(B)/%.o)
