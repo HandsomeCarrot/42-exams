@@ -166,6 +166,8 @@ int validMapCharacters(char * line, struct s_tile * tiles)
 int validMap(FILE * stream, t_data * data)
 {
 	data->map.layout = calloc(data->map.height, sizeof(char *));
+	if (!data->map.layout)
+		return (FAILURE);
 	char ** layout = data->map.layout;
 
 	for (int i = 0; i < data->map.height; ++i)
@@ -292,24 +294,30 @@ void freeMap(t_data * data)
 	}
 }
 
+void cleanup(t_data * data, FILE * stream)
+{
+	if (stream != stdin)
+		fclose(stream);
+	freeMap(data);
+}
+
 /**
- * TODO: check for minimum map size (at least one line with ?1 'empty' char?) - done
- * TODO: find biggest square - done
- * TODO: modify map to have bsq marked
- * TODO: print map
+ * TODO: read map from file
  */
 int main(int argc, char ** argv)
 {
-	FILE * stream = NULL;
-	(void)argv;
+	FILE * stream = stdin;
 
-	if (argc == 1)
-		stream = stdin;
-	//else if (argc == 2)
-	//{
-
-	//}
-	else
+	if (argc == 2)
+	{
+		stream = fopen(argv[1], "r");
+		if (stream == NULL)
+		{
+			fprintf(stdout, "Error: given file is invalid\n");
+			return (EXIT_FAILURE);
+		}
+	}
+	else if (argc > 2)
 	{
 		fprintf(stdout, "Error: invalid use of program\n");
 		return (EXIT_FAILURE);
@@ -325,7 +333,7 @@ int main(int argc, char ** argv)
 			|| findBSQ(&data) == FAILURE)
 		{
 			fprintf(stdout, "Error: map invalid\n");
-			freeMap(&data);
+			cleanup(&data, stream);
 			return (EXIT_FAILURE);
 		}
 
@@ -333,7 +341,7 @@ int main(int argc, char ** argv)
 	printMap(stdout, &data);
 
 	printf("[INFO] success\n"); //remove
-	freeMap(&data);
+	cleanup(&data, stream);
 
 	return EXIT_SUCCESS;
 }
