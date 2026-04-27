@@ -9,7 +9,6 @@ int isPrint(char c)
 {
 	if (c >= 33 && c <= 126)
 		return (SUCCESS);
-	printf("[WARNING] isPrint: '%c'\n", c); //remove
 	return (FAILURE);
 }
 
@@ -20,7 +19,6 @@ int isNum(char c)
 {
 	if (c >= '0' && c <= '9')
 		return (SUCCESS);
-	printf("[WARNING] isNum: '%c'\n", c); //remove
 	return (FAILURE);
 }
 
@@ -48,21 +46,15 @@ int ftStrLen(char * str)
  */
 int getNextLine(char ** line, FILE * stream)
 {
-	int read = 0; //remove
 	char * new_line = NULL;
 	unsigned long str_size = 0;
 
-	read = getline(&new_line, &str_size, stream);
+	getline(&new_line, &str_size, stream);
 
-	printf("[INFO] read: %d | size: %lu\n", read, str_size); //remove
 	if (!new_line)
-	{
-		printf("[FAIL] getNextLine\n"); //remove
 		return (FAILURE);
-	}
 
 	*line = new_line;
-	printf("[INFO] strlen(size): %d(%lu) | '%s'\n", ftStrLen(*line), str_size, *line); //remove
 	return (SUCCESS);
 }
 
@@ -86,10 +78,7 @@ int getNumber(char * str, int * index)
 		result = result * 10 + (int)(str[*index] - '0');
 
 		if (result < 0)
-		{
-			printf("[FAIL] getNumber: overflow\n"); //remove
 			return (-1);
-		}
 	}
 
 	return (result);
@@ -101,23 +90,16 @@ int getNumber(char * str, int * index)
 int validFirstLine(FILE * stream, t_data * data)
 {
 	if (!stream)
-	{
-		printf("[FAIL] validFirstLine: no stream\n"); //remove
 		return (FAILURE);
-	}
 
 	char * first_line = NULL;
 
 	if (getNextLine(&first_line, stream) == FAILURE)
-	{
-		printf("[FAIL] ValidFirstLine: gnl\n");
 		return (FAILURE);
-	}
 
 	if (ftStrLen(first_line) < 5)												//check line length (1 num, 3 chars, 1 newline), not more/less
 	{
 		free(first_line);
-		printf("[FAIL] ValidFirstLine: too short\n");
 		return (FAILURE);
 	}
 
@@ -136,12 +118,10 @@ int validFirstLine(FILE * stream, t_data * data)
 		|| data->tiles.obstacle == data->tiles.full								//check for duplicate character ('obstacle' & 'full')
 		|| first_line[str_index] != '\n')										//has to be a newline character, otherwise map is invalid
 	{
-		printf("[FAIL] validFirstLine: invalid format\n"); //remove
 		free(first_line);
 		return (FAILURE);
 	}
 
-	printf("[INFO] map height: %d | chars(empty,obstacle,full): '%c', '%c', '%c'\n", data->map.height, data->tiles.empty, data->tiles.obstacle, data->tiles.full); //remove
 	free(first_line);
 
 	return (SUCCESS);
@@ -173,32 +153,20 @@ int validMap(FILE * stream, t_data * data)
 	for (int i = 0; i < data->map.height; ++i)
 	{
 		if (getNextLine(&layout[i], stream) == FAILURE)
-		{
-			printf("[FAIL] validMap: gnl failed\n"); //remove
 			return (FAILURE);
-		}
 
 		int current_width = ftStrLen(layout[i]);
 
 		if (layout[i][current_width - 1] != '\n' || current_width <= 1)
-		{
-			printf("[FAIL] validMap: (does not end with / only has) a newline\n"); //remove
 			return (FAILURE);
-		}
 
 		if (i == 0)
 			data->map.width = current_width - 1;
 		else if ((current_width - 1) != data->map.width)
-		{
-			printf("[FAIL] validMap: line lengths do not match\n"); //remove
 			return (FAILURE);
-		}
 
 		if (validMapCharacters(layout[i], &data->tiles) == FAILURE)
-		{
-			printf("[FAIL] validMap: invalid character detected\n"); //remove
 			return (FAILURE);
-		}
 	}
 	return (SUCCESS);
 }
@@ -214,10 +182,7 @@ int validSquare(int square_size, int x, int y, t_data * data)
 		{
 			if (sq_x + x >= data->map.width || sq_y + y >= data->map.height
 				|| data->map.layout[sq_y + y][sq_x + x] != data->tiles.empty)
-			{
-				printf("[FAIL] validSquare(%d [%d, %d]): obstacles in the way\n", square_size, x, y); //remove
 				return (FAILURE);
-			}
 		}
 	}
 	return (SUCCESS);
@@ -246,10 +211,7 @@ int findBSQ(t_data * data)
 	}
 
 	if (data->square.size == 0)
-	{
-		printf("[FAIL] findBSQ: no square found\n"); //remove
 		return (FAILURE);
-	}
 	return (SUCCESS);
 }
 
@@ -340,7 +302,6 @@ int main(int argc, char ** argv)
 	insertBSQ(&data);
 	printMap(stdout, &data);
 
-	printf("[INFO] success\n"); //remove
 	cleanup(&data, stream);
 
 	return EXIT_SUCCESS;
