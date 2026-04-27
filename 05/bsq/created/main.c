@@ -3,6 +3,8 @@
 #include <stdlib.h>	//EXIT_SUCCES, EXIT_FAILURE, NULL, calloc, free
 
 /**
+ * @brief checks if @p c is a printable ASCII character (33-126)
+ *
  * @return FAILURE/SUCCESS
  */
 int isPrint(char c)
@@ -13,6 +15,8 @@ int isPrint(char c)
 }
 
 /**
+ * @brief checks if @p c is a digit ('0'-'9')
+ *
  * @return FAILURE/SUCCESS
  */
 int isNum(char c)
@@ -38,9 +42,10 @@ int ftStrLen(char * str)
 }
 
 /**
- * @brief read a full line from @p stream
+ * @brief reads a full line from @p stream using getline
  *
- * Uses getline to read a full line from stream.
+ * @param line - output pointer to the non-allocated line buffer
+ * @param stream - input stream to read from
  *
  * @return SUCCESS/FAILURE
  */
@@ -60,11 +65,15 @@ int getNextLine(char ** line, FILE * stream)
 
 
 /**
- * @param str - str to convert the number from
- * @param index - starting index of the search, but also points
- *                to the character after the last number.
+ * @brief parses a non-negative integer from @p str starting at @p index
  *
- * @return '-1' if something goes wrong, '>= 0' if successful
+ * Advances @p index past the parsed digits. Stops on the first
+ * non-digit character (including '\0').
+ *
+ * @param str - string to parse the number from
+ * @param index - on entry: starting position; on exit: position after the last digit
+ *
+ * @return '-1' if overflow occurs, '>= 0' if successful
  */
 int getNumber(char * str, int * index)
 {
@@ -85,6 +94,15 @@ int getNumber(char * str, int * index)
 }
 
 /**
+ * @brief validates the first line of the map file
+ *
+ * Expects format: "<height><empty><obstacle><full>\n".
+ * Validates height > 0, all three tile characters are printable
+ * and distinct from each other, and the line ends with '\n'.
+ *
+ * @param stream - input stream positioned at the first line
+ * @param data - parsed tile characters and map height stored here
+ *
  * @return FAILURE/SUCCESS
  */
 int validFirstLine(FILE * stream, t_data * data)
@@ -128,6 +146,12 @@ int validFirstLine(FILE * stream, t_data * data)
 }
 
 /**
+ * @brief checks that every character in @p line (except trailing '\n') is
+ *        either the empty or obstacle tile character
+ *
+ * @param line - a single map row (including trailing '\n')
+ * @param tiles - the tile set to validate against
+ *
  * @return SUCCESS/FAILURE
  */
 int validMapCharacters(char * line, struct s_tile * tiles)
@@ -141,6 +165,14 @@ int validMapCharacters(char * line, struct s_tile * tiles)
 }
 
 /**
+ * @brief reads and validates the full map from @p stream
+ *
+ * Allocates the map layout, reads each row, checks that every row
+ * has the same width and contains only valid tile characters.
+ *
+ * @param stream - input stream positioned after the first line
+ * @param data - map dimensions and tile set; allocated layout stored here
+ *
  * @return SUCCESS/FAILURE
  */
 int validMap(FILE * stream, t_data * data)
@@ -172,6 +204,10 @@ int validMap(FILE * stream, t_data * data)
 }
 
 /**
+ * @brief checks whether a square of @p square_size whose top-left
+ *        corner is at (@p x, @p y) fits entirely within the map
+ *        and consists only of empty tiles
+ *
  * @return SUCCESS/FAILURE
  */
 int validSquare(int square_size, int x, int y, t_data * data)
@@ -189,7 +225,13 @@ int validSquare(int square_size, int x, int y, t_data * data)
 }
 
 /**
- * @return SUCCESS/FAILURE
+ * @brief finds the largest square of empty tiles in the map
+ *
+ * Iterates over every cell and expands the square as long as
+ * validSquare succeeds. The result (size and top-left corner)
+ * is stored in data->square.
+ *
+ * @return FAILURE if no empty tile exists at all, SUCCESS otherwise
  */
 int findBSQ(t_data * data)
 {
@@ -216,7 +258,7 @@ int findBSQ(t_data * data)
 }
 
 /**
- * @brief inserts biggest square into map
+ * @brief fills the found largest square with the 'full' tile character
  */
 void insertBSQ(t_data * data)
 {
@@ -230,7 +272,7 @@ void insertBSQ(t_data * data)
 }
 
 /**
- * @brief prints the map to @p stream
+ * @brief writes the map layout to @p stream, row by row
  */
 void printMap(FILE * stream, t_data * data)
 {
@@ -241,7 +283,7 @@ void printMap(FILE * stream, t_data * data)
 }
 
 /**
- * @brief frees map
+ * @brief frees all memory allocated for the map layout
  */
 void freeMap(t_data * data)
 {
@@ -256,6 +298,9 @@ void freeMap(t_data * data)
 	}
 }
 
+/**
+ * @brief closes the stream (if not stdin) and frees map memory
+ */
 void cleanup(t_data * data, FILE * stream)
 {
 	if (stream != stdin)
@@ -264,7 +309,12 @@ void cleanup(t_data * data, FILE * stream)
 }
 
 /**
- * TODO: read map from file
+ * @brief entry point; reads map from file or stdin, solves BSQ, prints result
+ *
+ * Usage: ./bsq [map_file]
+ * If no file is given, reads from stdin.
+ *
+ * @return EXIT_SUCCESS on success, EXIT_FAILURE on error
  */
 int main(int argc, char ** argv)
 {
