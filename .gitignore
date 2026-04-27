@@ -1,6 +1,8 @@
+# universal
 *.swp
 *.o
 compile_flags.txt
+.kilo/*
 
 # exam 04
 04/vbc/res2/vbc
