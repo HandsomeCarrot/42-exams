@@ -252,6 +252,31 @@ int findBSQ(t_data * data)
 }
 
 /**
+ * @brief inserts biggest square into map
+ */
+void insertBSQ(t_data * data)
+{
+	for (int y = 0; y < data->square.size; ++y)
+	{
+		for (int x = 0; x < data->square.size; ++x)
+		{
+			data->map.layout[data->square.y + y][data->square.x + x] = data->tiles.full;
+		}
+	}
+}
+
+/**
+ * @brief prints the map to @p stream
+ */
+void printMap(FILE * stream, t_data * data)
+{
+	for (int y = 0; y < data->map.height; ++y)
+	{
+		fprintf(stream, "%s", data->map.layout[y]);
+	}
+}
+
+/**
  * @brief frees map
  */
 void freeMap(t_data * data)
@@ -275,20 +300,37 @@ void freeMap(t_data * data)
  */
 int main(int argc, char ** argv)
 {
+	FILE * stream = NULL;
 	(void)argv;
-	t_data data;
 
 	if (argc == 1)
+		stream = stdin;
+	//else if (argc == 2)
+	//{
+
+	//}
+	else
 	{
-		if (validFirstLine(stdin, &data) == FAILURE
-			|| validMap(stdin, &data) == FAILURE
+		fprintf(stdout, "Error: invalid use of program\n");
+		return (EXIT_FAILURE);
+	}
+
+	t_data data;
+	data.map.layout = NULL;
+	data.map.height = 0;
+	data.map.width = 0;
+
+	if (validFirstLine(stream, &data) == FAILURE
+			|| validMap(stream, &data) == FAILURE
 			|| findBSQ(&data) == FAILURE)
 		{
 			fprintf(stdout, "Error: map invalid\n");
 			freeMap(&data);
 			return (EXIT_FAILURE);
 		}
-	}
+
+	insertBSQ(&data);
+	printMap(stdout, &data);
 
 	printf("[INFO] success\n"); //remove
 	freeMap(&data);
