@@ -1,4 +1,4 @@
-# bigint (wip)
+# bigint
 
 ## toc
 
@@ -46,5 +46,6 @@ All files in here are extra files, that you do not need at all for this exercise
 
 ## usage
 
-- compile using `make`, or `make re` - this will create the executable file 'test'
+- compile using `make`, or `make re`
+	> this will create the executable file 'test'
 - execute the program `./test`

@@ -16,9 +16,9 @@ Each exercise has its own folder, with the exercise name. In it you will find: -
 | :----------------------------: | :---------: | :--------: | :----: | :--: |
 | [polyset](./polyset/README.md) |   passed    |     1      |   50   | yes  |
 |             vect2              |  confirmed  |     1      |   50   |  no  |
-|  [bigint](./bigint/README.md)  | unconfirmed |     1      |   50   | wip  |
+|  [bigint](./bigint/README.md)  | unconfirmed |     1      |   50   | yes  |
 |              life              | unconfirmed |     2      |   /    |  no  |
-|     [bsq](./bsq/README.md)     |   failed    |     2      |   50   | wip  |
+|     [bsq](./bsq/README.md)     |   failed    |     2      |   50   | yes  |
 
 ### keywords
 

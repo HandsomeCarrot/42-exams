@@ -1,4 +1,4 @@
-# bsq (wip)
+# bsq
 
 ## toc
 
@@ -43,6 +43,7 @@ Definition of a valid map :
 - In case of an invalid map, your program should display "Error: invalid map" on the standard output followed by a line break.
 
 example:
+```bash
 %>cat example_file
 9.ox
 ...........................
@@ -65,6 +66,7 @@ example:
 ......o..............o.....
 ..o.......o................
 %>
+```
 
 ## file structure
 
@@ -84,4 +86,50 @@ All files in here are extra files, that you do not need at all for this exercise
 
 ## usage
 
-Does not work yet :(
+Compile the program:
+
+`make` or `make re`
+
+This produces the `test` executable.
+
+### running the program
+
+**With a file argument:**
+
+```bash
+./test <map_file>
+```
+
+Reads the map from `<map_file>` and prints the solved map to stdout.
+
+Example:
+```bash
+./test given/example_file
+```
+
+**From standard input:**
+
+```bash
+./test
+```
+
+Then type (or pipe) the map content.
+
+Example:
+```bash
+./test
+3.oX
+...
+.o.
+...
+```
+
+### error output
+
+The program prints error messages to stdout, not **stderr**:
+
+| Error                                  | Message                         |
+| -------------------------------------- | ------------------------------- |
+| Invalid file (cannot open)             | `Error: given file is invalid`  |
+| Wrong number of arguments (>1)         | `Error: invalid use of program` |
+| Invalid map (bad format or unsolvable) | `Error: map invalid`            |
