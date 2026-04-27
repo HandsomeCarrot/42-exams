@@ -2,13 +2,13 @@
 #define BIGINT_HPP
 
 #include <string>
-#include <deque>
+#include <vector>
 #include <iostream>
 
 class bigint
 {
 	public:
-		typedef std::deque<unsigned int> t_bigint;
+		typedef std::vector<unsigned int> t_bigint;
 		typedef t_bigint::size_type size_type;
 
 	protected:
@@ -31,8 +31,8 @@ class bigint
 	public:
 		bigint operator+(const bigint & right) const;
 
-		bigint operator++(int); //post increment i.e. x++
 		bigint & operator++(void); //pre increment i.e. ++x
+		bigint operator++(int); //post increment i.e. x++
 
 		bigint & operator+=(const bigint & right);
 
@@ -43,8 +43,8 @@ class bigint
 		bool operator>(const bigint & right) const;
 		bool operator>=(const bigint & right) const;
 
-		bigint operator<<(const bigint & shift) const;
-		bigint operator>>(const bigint & shift) const;
+		bigint operator<<(const bigint & shift);
+		bigint operator>>(const bigint & shift);
 
 		bigint & operator<<=(const bigint & shift);
 		bigint & operator>>=(const bigint & shift);
