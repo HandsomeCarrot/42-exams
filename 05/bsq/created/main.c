@@ -1,8 +1,6 @@
 #include "main.h"	//t_data, SUCCESS/FAILURE
-#include <stdio.h>	//fscanf, FILE, fprintf, stdout, stdin
-#include <stdlib.h>	//EXIT_SUCCES, EXIT_FAILURE
-#include <string.h>
-#include <time.h>
+#include <stdio.h>	//fscanf, FILE, fprintf, stdout, stdin, getline
+#include <stdlib.h>	//EXIT_SUCCES, EXIT_FAILURE, NULL, calloc, free
 
 /**
  * @return FAILURE/SUCCESS
@@ -64,7 +62,7 @@ int getNextLine(char ** line, FILE * stream)
 	}
 
 	*line = new_line;
-	printf("[INFO] strlen(size): %lu(%lu) | '%s'\n", strlen(*line), str_size, *line); //remove
+	printf("[INFO] strlen(size): %d(%lu) | '%s'\n", ftStrLen(*line), str_size, *line); //remove
 	return (SUCCESS);
 }
 
@@ -204,6 +202,56 @@ int validMap(FILE * stream, t_data * data)
 }
 
 /**
+ * @return SUCCESS/FAILURE
+ */
+int validSquare(int square_size, int x, int y, t_data * data)
+{
+	for (int sq_y = 0; sq_y < square_size; ++sq_y)
+	{
+		for (int sq_x = 0; sq_x < square_size; ++sq_x)
+		{
+			if (sq_x + x >= data->map.width || sq_y + y >= data->map.height
+				|| data->map.layout[sq_y + y][sq_x + x] != data->tiles.empty)
+			{
+				printf("[FAIL] validSquare(%d [%d, %d]): obstacles in the way\n", square_size, x, y); //remove
+				return (FAILURE);
+			}
+		}
+	}
+	return (SUCCESS);
+}
+
+/**
+ * @return SUCCESS/FAILURE
+ */
+int findBSQ(t_data * data)
+{
+	data->square.size = 0;
+	data->square.x = -1;
+	data->square.y = -1;
+
+	for (int y = 0; y < data->map.height; ++y)
+	{
+		for (int x = 0; x < data->map.width; ++x)
+		{
+			for (int square_size = data->square.size + 1; validSquare(square_size, x, y, data); ++square_size)
+			{
+				data->square.size = square_size;
+				data->square.x = x;
+				data->square.y = y;
+			}
+		}
+	}
+
+	if (data->square.size == 0)
+	{
+		printf("[FAIL] findBSQ: no square found\n"); //remove
+		return (FAILURE);
+	}
+	return (SUCCESS);
+}
+
+/**
  * @brief frees map
  */
 void freeMap(t_data * data)
@@ -220,9 +268,9 @@ void freeMap(t_data * data)
 }
 
 /**
- * TODO: check for minimum map size (at least one line with 1? 'empty' char)
- * TODO: find biggest square
- * TODO: modifie map to have bsq marked
+ * TODO: check for minimum map size (at least one line with ?1 'empty' char?) - done
+ * TODO: find biggest square - done
+ * TODO: modify map to have bsq marked
  * TODO: print map
  */
 int main(int argc, char ** argv)
@@ -233,7 +281,8 @@ int main(int argc, char ** argv)
 	if (argc == 1)
 	{
 		if (validFirstLine(stdin, &data) == FAILURE
-			|| validMap(stdin, &data) == FAILURE)
+			|| validMap(stdin, &data) == FAILURE
+			|| findBSQ(&data) == FAILURE)
 		{
 			fprintf(stdout, "Error: map invalid\n");
 			freeMap(&data);
