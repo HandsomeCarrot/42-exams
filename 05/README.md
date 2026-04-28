@@ -4,7 +4,7 @@
 
 In here are all the exercises, from exam 05, that I did. I tried to find most matching subjects and given files, for these exercises. Some of them I could not personnaly verify as I did not encounter them in the exam. That is mentioned in their respective 'readme.md'.
 
-> I did not have the python common-core, so this can be an outdated exam (I last attended: 2026-april-23)
+> I did not have the python common-core, so this can be an outdated exam (I last attended: 2026-april-28)
 
 ## file structure
 
