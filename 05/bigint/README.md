@@ -1,10 +1,15 @@
-# bigint
+# bigint (unconfirmed)
+
+## status
+
+unconfirmed — subject/files from public repos, not personally verified
 
 ## toc
 
 - [subject](#subject)
 - [file structure](#file-structure)
 - [usage](#usage)
+- [personal notes](#personal-notes)
 
 ## subject
 
@@ -36,16 +41,26 @@ Files you need to create, implement and push for this exercise.
 
 ### given
 
-Files you will be given for this exercise. Your files will depend on these. The main is a test if your implementation has the wanted behaviour.
+Files you will be given for this exercise. Your files will depend on these. The main is a test if your implementation has the wanted behavior.
 
 > This exercise subject and files are from another public git repo. I did not have this exercise in the exam, so I can not verify the correctness.
 
 ### root
 
-All files in here are extra files, that you do not need at all for this exercise. I created the `Makefile` for eaasier testing.
+All files in here are extra files, that you do not need at all for this exercise. I created the `Makefile` for easier testing.
 
 ## usage
 
 - compile using `make`, or `make re`
-	> this will create the executable file 'test'
+  > this will create the executable file 'test'
 - execute the program `./test`
+
+Example:
+```bash
+./test
+```
+
+## personal notes
+
+- Internal representation choice (string vs vector of digits)
+	- I used a vector of `unsigned int`s to simplify the implementation of addition ('operator+').

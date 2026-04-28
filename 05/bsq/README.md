@@ -1,10 +1,18 @@
-# bsq
+# bsq (reworked)
+
+## status
+
+failed in exam
+> reworked afterward
+
+>tries: 1
 
 ## toc
 
 - [subject](#subject)
 - [file structure](#file-structure)
 - [usage](#usage)
+- [personal notes](#personal-notes)
 
 ## subject
 
@@ -70,11 +78,11 @@ example:
 
 ## file structure
 
-The subject is in this readme and not in a seperate file. All other files are organized as follows:
+The subject is in this readme and not in a separate file. All other files are organized as follows:
 
 ### created
 
-Files I created and implementd for this exercise.
+Files I created and implemented for this exercise.
 
 ### given
 
@@ -133,3 +141,22 @@ The program prints error messages to stdout, not **stderr**:
 | Invalid file (cannot open)             | `Error: given file is invalid`  |
 | Wrong number of arguments (>1)         | `Error: invalid use of program` |
 | Invalid map (bad format or unsolvable) | `Error: map invalid`            |
+
+## personal notes
+
+- I failed this exercise mainly, because I read a lot of manuals for the new functions which we never used before and ran out of time.
+- The hardest part of this exercise, in my opinion, is the parsing from different outputs.
+	- The first time I was thinking too much about which function to use to get the input (`fscanf` / `getline`).
+	- You could probably use `fscanf` for parsing the first line to make it easier (you can parse the number into an int directly), but then you have less control, at least thats what I feel like. I wasn't sure if they will give you wrong inputs,so I just stuck with getline.
+- The actual logic, in finding the biggest square, can be pretty easy.
+	- iterate over each coordinate, starting at [0,0] and increasing the x-coordinate first.
+	> [0,0] -> ... -> [width,0] -> [0, 1] -> ... -> [width, height]
+	- trying to find the biggest square possible for that starting point
+	> squares => width and height are the same, so size 2 means the square is 2x2. Can not be 2x3.
+		- if we found a square before, I will see if a square, bigger by one then the previous bsq, fits there
+			- if it fits I continue trying finding a bigger square
+			- if it doesn't fit, I move to the next coordinate
+	> this method automatically finds the bsq and if there are multiple squares of the same size, it will automatically take the top-left-most one.
+	- after it went through all possibilities I just put the 'full'-characters at the squares position
+	- then I just draw the completed board.
+	

@@ -1,16 +1,25 @@
-# POLYSET
+# POLYSET (passed)
+
+## status
+
+passed (2026-04-22)
+> there can be small differences in the code and subject that I did not notice
+
+> tries: 2
 
 ## toc
 
 - [subject](#subject)
 - [file structure](#file-structure)
 - [usage](#usage)
+- [personal notes](#personal-notes)
 
 ## subject
 
-Assigment name: Polyset |
+Assignment name: Polyset
+
 Expected File: searchable_array_bag.cpp, searchable_array_bag.hpp,
-searchable_tree_bg.cpp, searchable_tree_bag.hpp, set.cpp, set.hpp
+ searchable_tree_bg.cpp, searchable_tree_bag.hpp, set.cpp, set.hpp
 
 You will find in this directory some classes:
 
@@ -37,7 +46,7 @@ All classes should be under orthodox canonical form. Don't forget the const.
 
 ## file structure
 
-The subject is in this readme and not in a seperate file. All other files are organized as follows:
+The subject is in this readme and not in a separate file. All other files are organized as follows:
 
 ### created
 
@@ -51,11 +60,23 @@ Files you will be given for this exercise, but should not be pushed. Your files 
 
 ### root
 
-All files in here are extra files, that you do not need at all for this exercise. I created the `Makefile` for eaasier testing.
+All files in here are extra files, that you do not need at all for this exercise. I created the `Makefile` for easier testing.
 
 ## usage
 
 - compile using `make`, or `make re` - this will create the executable file 'test'
 - execute the program `./test <arguments>`
-  - arguments: each argument is a number that will be inserted
-  - example execution: `./test 1 2 3 4`, `./test 12 34 45`, ...
+	- arguments: each argument is a number that will be inserted
+	- example execution:
+	```bash
+	./test 1 2 3 4
+	# or
+	./test 12 34 45
+	```
+
+## personal notes
+
+- failed this the first time, because
+	- I forgot how to, properly inherit a class
+	- I forgot how to, override functions properly
+	- did not get what they expect from the `set` class

@@ -12,13 +12,20 @@ Each exercise has its own folder, with the exercise name. In it you will find: -
 
 ## exercise list
 
-|            exercise            |   status    | exam level | points | code |
-| :----------------------------: | :---------: | :--------: | :----: | :--: |
-| [polyset](./polyset/README.md) |   passed    |     1      |   50   | yes  |
-|             vect2              |  confirmed  |     1      |   50   |  no  |
-|  [bigint](./bigint/README.md)  | unconfirmed |     1      |   50   | yes  |
-|              life              | unconfirmed |     2      |   /    |  no  |
-|     [bsq](./bsq/README.md)     |   failed    |     2      |   50   | yes  |
+### level 0
+
+| exercise                       | status      | points | impl. |
+| :----------------------------- | :---------- | :----: | :---: |
+| [polyset](./polyset/README.md) | passed      |   50   |  yes  |
+| [bigint](./bigint/README.md)   | unconfirmed |   50   |  yes  |
+| vect2                          | confirmed   |   50   |  no   |
+
+### level 1
+
+| exercise                 | status | points | impl. |
+| :----------------------- | :----- | :----: | :---: |
+| [life](./life/README.md) | passed |   50   |  yes  |
+| [bsq](./bsq/README.md)   | failed |   50   |  yes  |
 
 ### keywords
 
@@ -41,11 +48,9 @@ Each exercise has its own folder, with the exercise name. In it you will find: -
 
     > all information (i.e. subject, given files, exam level) about this are unconfirmed
 
-- exam level -> on which level of the exam did either me, or a peer encounter the exercise on
+- points -> how many percentage points the exercise gives
 
-- points -> how many percentage points does the exercise give
-
-- code
+- impl.
   - yes -> implemented in some form on this repo
   - wip -> started implementation / broken
   - no -> not implemented
