@@ -8,7 +8,7 @@ Assignment name : life
 
 Expected files : *.c *.h
 
-Allowed functions: atoi, read, putchar, malloc, calloc, realloc, **free**
+Allowed functions: atoi, read, putchar, malloc, calloc, realloc, free
 
 
 You must write a program that will simulate a game of life.
@@ -34,18 +34,18 @@ Each cell outside of the array will be considered dead.
 Example:
 ```bash
 $> echo 'sdxddssaaww' | ./a.out 5 5 0 | cat -e
- $
+     $
  OOO $
  O O $
  OOO $
- $
+     $
 $> echo 'sdxssdswdxddddsxaadwxwdxwaa' | ./a.out 10 6 0 | cat -e
- $
- O OOO $
- O O $
- OOO O $
- O OOO $
- $
+          $
+ 0   OOO  $
+ O     O  $
+ OOO  O   $
+  O  OOO  $
+          $
 $> echo 'dxss' | ./a.out 3 3 0 | cat -e
  O $
  O $
@@ -59,3 +59,19 @@ $> echo 'dxss' | ./a.out 3 3 2 | cat -e
  O $
  O $
 ```
+
+## file structure
+
+The subject is in this readme and not in a seperate file. All other files are organized as follows:
+
+### created
+
+Files I created and implementd for this exercise.
+
+### root
+
+All files in here are extra files, that you do not need at all for this exercise.
+
+## usage
+
+wip
