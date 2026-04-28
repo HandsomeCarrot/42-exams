@@ -18,15 +18,15 @@ Each exercise has its own folder, with the exercise name. In it you will find: -
 
 ### level 0
 
-| exercise                         | status | points | impl. |
-| :------------------------------- | :----- | :----: | :---: |
-| [ft_popen](./ft_popen/README.md) | passed |   50   |  yes  |
+| exercise               | status | points | impl. |
+| :--------------------- | :----- | :----: | :---: |
+| [ft_popen](./ft_popen) | passed |   50   |  yes  |
 
 ### level 1
 
-| exercise               | status | points | impl. |
-| :--------------------- | :----- | :----: | :---: |
-| [vbc](./vbc/README.md) | passed |   50   |  yes  |
+| exercise     | status | points | impl. |
+| :----------- | :----- | :----: | :---: |
+| [vbc](./vbc) | passed |   50   |  yes  |
 
 ### keywords
 

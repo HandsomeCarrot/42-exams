@@ -14,18 +14,18 @@ Each exercise has its own folder, with the exercise name. In it you will find: -
 
 ### level 0
 
-| exercise                       | status      | points | impl. |
-| :----------------------------- | :---------- | :----: | :---: |
-| [polyset](./polyset/README.md) | passed      |   50   |  yes  |
-| [bigint](./bigint/README.md)   | unconfirmed |   50   |  yes  |
-| vect2                          | confirmed   |   50   |  no   |
+| exercise             | status      | points | impl. |
+| :------------------- | :---------- | :----: | :---: |
+| [polyset](./polyset) | passed      |   50   |  yes  |
+| [bigint](./bigint)   | unconfirmed |   50   |  yes  |
+| vect2                | confirmed   |   50   |  no   |
 
 ### level 1
 
-| exercise                 | status | points | impl. |
-| :----------------------- | :----- | :----: | :---: |
-| [life](./life/README.md) | passed |   50   |  yes  |
-| [bsq](./bsq/README.md)   | failed |   50   |  yes  |
+| exercise       | status | points | impl. |
+| :------------- | :----- | :----: | :---: |
+| [life](./life) | passed |   50   |  yes  |
+| [bsq](./bsq)   | failed |   50   |  yes  |
 
 ### keywords
 

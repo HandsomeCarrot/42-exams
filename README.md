@@ -4,8 +4,8 @@ Personal work and notes for **42 Network** exams.
 
 ## Ranks
 
-| Rank                      | Focus                              |
-| :------------------------ | :--------------------------------- |
+| Rank            | Focus                              |
+| :-------------- | :--------------------------------- |
 | [exam 04](./04) | C — Systems Programming            |
 | [exam 05](./05) | C++ & Algorithms / Data Structures |
 
