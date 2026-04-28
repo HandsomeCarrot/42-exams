@@ -15,6 +15,11 @@ void parseArgs(char ** argv, t_data * data)
 	data->game_iterations = atoi(argv[3]);
 }
 
+int getBoardIndex(int x, int y, t_data * data)
+{
+	return (y * data->board_width + x);
+}
+
 void parseBoardConfig(t_data * data)
 {
 	char move = 0;
@@ -22,11 +27,8 @@ void parseBoardConfig(t_data * data)
 	int pen_x = 0;
 	int pen_y = 0;
 
-	while (1)
+	while (read(STDIN_FILENO, &move, sizeof(char)) == 1)
 	{
-		if (read(STDIN_FILENO, &move, 1) != 1)
-			break ;
-
 		pen_x += (move == MOVE_RIGHT) - (move == MOVE_LEFT);
 		pen_y += (move == MOVE_DOWN) - (move == MOVE_UP);
 
@@ -36,7 +38,7 @@ void parseBoardConfig(t_data * data)
 		if (draw == true
 			&& pen_x < data->board_width && pen_x >= 0
 			&& pen_y < data->board_height && pen_y >= 0)
-			data->board[pen_y * data->board_width + pen_x] = true;
+			data->board[getBoardIndex(pen_x, pen_y, data)] = true;
 	}
 }
 
@@ -49,33 +51,33 @@ bool * copyBoard(t_data * data)
 	for (int y = 0; y < data->board_height; ++y)
 	{
 		for (int x = 0; x < data->board_width; ++x)
-			copy[y * data->board_width + x] = data->board[y * data->board_width + x];
+			copy[getBoardIndex(x, y, data)] = data->board[getBoardIndex(x, y, data)];
 	}
 
 	return (copy);
 }
 
-bool getNextGen(int base_x, int base_y, bool * old_board, t_data * data)
+bool getNewState(int base_x, int base_y, bool * old_board, t_data * data)
 {
 	int neighbor_count = 0;
 
-	for (int y = -1; y < 2; ++y)
+	for (int y = base_y - 1; y < base_y + 2; ++y)
 	{
-		if ((base_y + y) < 0 || (base_y + y) >= data->board_height)
+		if (y < 0 || + y >= data->board_height)
 			continue ;
-		for (int x = -1; x < 2; ++x)
+
+		for (int x = base_x - 1; x < base_x + 2; ++x)
 		{
-			if ((base_x + x) < 0 || (base_x + x) >= data->board_width
-				|| (x == 0 && y == 0))
+			if (x < 0 || x >= data->board_width
+				|| (x == base_x && y == base_y))
 				continue ;
 
-			if (old_board[(base_y + y) * data->board_width + (base_x + x)])
-				++neighbor_count;
+			neighbor_count += old_board[getBoardIndex(x, y, data)];
 		}
 	}
 
 	if (neighbor_count == 2)
-		return (old_board[base_y * data->board_width + base_x]);
+		return (old_board[getBoardIndex(base_x, base_y, data)]);
 	else if (neighbor_count == 3)
 		return (true);
 	else
@@ -95,11 +97,10 @@ int simulateLife(t_data * data)
 		for (int y = 0; y < data->board_height; ++y)
 		{
 			for (int x = 0; x < data->board_width; ++x)
-				data->board[y * data->board_width + x] = getNextGen(x, y, board_copy, data);
+				data->board[getBoardIndex(x, y, data)] = getNewState(x, y, board_copy, data);
 		}
 
-		if (board_copy)
-			free(board_copy);
+		free(board_copy);
 	}
 
 	return (SUCCESS);

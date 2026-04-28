@@ -28,14 +28,15 @@ fclean: clean
 re: fclean all
 
 run: re
+	@printf "\n----------\n\n"
 	echo 'sdxddssaaww' | ./$(NAME) 5 5 0 | cat -e
-	@echo '---'
+	@printf "\n----------\n\n"
 	echo 'sdxssdswdxddddsxaadwxwdxwaa' | ./$(NAME) 10 6 0 | cat -e
-	@echo '---'
+	@printf "\n----------\n\n"
 	echo 'dxss' | ./$(NAME) 3 3 0 | cat -e
-	@echo '---'
+	@printf "\n----------\n\n"
 	echo 'dxss' | ./$(NAME) 3 3 1 | cat -e
-	@echo '---'
+	@printf "\n----------\n\n"
 	echo 'dxss' | ./$(NAME) 3 3 2 | cat -e
 
 .PHONY: all clean fclean re run

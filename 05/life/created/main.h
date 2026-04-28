@@ -13,7 +13,7 @@
 #define PEN_STANCE 'x'
 
 #define LIFE 'O'
-#define DEATH '-'
+#define DEATH ' '
 
 typedef struct s_data
 {
