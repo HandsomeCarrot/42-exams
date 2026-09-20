@@ -12,19 +12,19 @@ If you cant allocate memory it should write in stderr "Fatal error" followed by 
 
 Your program must be non-blocking but client can be lazy and if they don't read your message you must NOT disconnect them...
 
-Your program must not contains #define preproc
+Your program must not contain #define preproc
 Your program must only listen to 127.0.0.1
-The fd that you will receive will already be set to make 'recv' or 'send' to block if select hasn't be called before calling them, but will not block otherwise. 
+The fd that you will receive will already be set to make 'recv' or 'send' to block if select hasn't be called before calling them, but will not block otherwise.
 
 When a client connect to the server:
 - the client will be given an id. the first client will receive the id 0 and each new client will received the last client id + 1
 - %d will be replace by this number
-- a message is sent to all the client that was connected to the server: `"server: client %d just arrived\n", client_id`
+- a message is sent to all the client that was connected to the server: "server: client %d just arrived\n"
 
 clients must be able to send messages to your program.
 - message will only be printable characters, no need to check
 - a single message can contain multiple `\n` characters
-- when the server receives a message, it must resend it to all the other clients with `"client %d: %s", client_id` before every line!
+- when the server receives a message, it must resend it to all the other clients with "client %d: %s" before every line!
 
 When a client disconnect from the server:
 - a message is sent to all the client that was connected to the server: "server: client %d just left\n"
