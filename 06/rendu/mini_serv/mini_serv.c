@@ -1,4 +1,5 @@
 #include <netinet/in.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <strings.h>
@@ -9,12 +10,12 @@
 
 typedef struct client
 {
-	int		id;
+	int	    id;
 	int		fd;
 	char	*in_buf;
 	int		in_buf_size;
 	int		in_buf_used;
-	int		disconnected;
+	int		disconnect;
 }			t_client;
 
 typedef struct server
@@ -26,26 +27,113 @@ typedef struct server
 	t_client			*clients;
 	int					clients_connected;
 	int					clients_reserved;
-	int					clients_disconnected;
+	int					clients_to_disconnect;
 	int					largest_fd;
 	int					next_id;
 }						t_server;
 
-void exit_error(const char *msg)
+typedef enum msg_type
 {
-	write(2, msg, strlen(msg));
-	exit(1);
-}
+    JOIN_MSG,
+    LEAVE_MSG,
+    CLIENT_MSG
+}   t_msg_type;
 
 void cleanup(t_server *serv)
 {
 	// TODO
+	(void)serv;
+}
+
+void exit_error(const char *msg)
+{
+	write(STDERR_FILENO, msg, strlen(msg));
+	exit(1);
+}
+
+int extract_message(char **buf, char **msg, t_client *client)
+{
+	char	*newbuf;
+	int	i;
+
+	*msg = 0;
+	if (*buf == 0)
+		return (0);
+	i = 0;
+	while ((*buf)[i])
+	{
+		if ((*buf)[i] == '\n')
+		{
+			newbuf = calloc(1, client->in_buf_size);
+			if (newbuf == 0)
+				return (-1);
+			strcpy(newbuf, *buf + i + 1);
+			*msg = *buf;
+			(*msg)[i + 1] = 0;
+			*buf = newbuf;
+			client->in_buf_used -= i;
+			return (1);
+		}
+		i++;
+	}
+	return (0);
+}
+
+char *create_msg(int sender_id, t_msg_type type, const char *msg)
+{
+	char *complete_msg = NULL;
+	int complete_msg_len = 10;
+	int ret = 0;
+
+	switch (type)
+	{
+		case JOIN_MSG:
+			complete_msg_len += 29;
+			break ;
+		case LEAVE_MSG:
+			complete_msg_len += 26;
+			break ;
+		case CLIENT_MSG:
+			complete_msg_len += strlen(msg) + 9;
+			break ;
+	}
+
+
+	complete_msg = calloc((complete_msg_len + 1), sizeof(char));
+	if (!complete_msg)
+		return (NULL);
+
+	switch (type)
+	{
+		case JOIN_MSG:
+			ret = sprintf(complete_msg, "server: client %d just arrived\n", sender_id);
+			break ;
+		case LEAVE_MSG:
+			ret = sprintf(complete_msg, "server: client %d just left\n", sender_id);
+			break ;
+		case CLIENT_MSG:
+			ret = sprintf(complete_msg, "client %d: %s", sender_id, msg);
+			break ;
+	}
+
+	if (ret < 0)
+		return (NULL);
+
+	return (complete_msg);
 }
 
 void broadcast_msg(const char *msg, int sender_id, t_server *serv)
 {
-	// TODO
-	// NOTE: have to pre-allocate enough space for the string sprintf produces
+	size_t msg_len = strlen(msg);
+
+	for (int i = 0; i < serv->clients_connected; ++i)
+	{
+	    if (serv->clients[i].id == sender_id)
+			continue ;
+
+		if ((send(serv->clients[i].fd, msg, msg_len, 0)) == -1)
+			serv->clients[i].disconnect = 1;
+	}
 }
 
 void reserve_clients(t_server *serv)
@@ -63,7 +151,7 @@ void reserve_clients(t_server *serv)
 	serv->clients = tmp_clients;
 }
 
-void register_client(t_server *serv, int new_fd)
+int register_client(t_server *serv, int new_fd)
 {
 	int buf_max_chars = 250;
 	char *new_buf = calloc(buf_max_chars, sizeof(char));
@@ -84,6 +172,11 @@ void register_client(t_server *serv, int new_fd)
 	++serv->next_id;
 	if (new_client->fd > serv->largest_fd)
 		serv->largest_fd = new_client->fd;
+
+	// debug
+	printf("new client %d\n", new_client->id);
+
+	return (new_client->id);
 }
 
 void handle_new_client(t_server *serv)
@@ -92,8 +185,11 @@ void handle_new_client(t_server *serv)
 	if (new_fd < 0)
 		return;
 	reserve_clients(serv);
-	register_client(serv, new_fd);
-	// TODO: broadcast join message
+	int new_id = register_client(serv, new_fd);
+
+	char *msg = create_msg(new_id, JOIN_MSG	, NULL);
+	broadcast_msg(msg,  new_id, serv);
+	free(msg);
 }
 
 void init_server(t_server *serv, char *port)
@@ -130,7 +226,7 @@ void wait_for_events(t_server *serv)
 	}
 
 	struct timeval wait_timer = {0,0};
-	if ((select(serv->largest_fd, &serv->rfds, &serv->wfds, NULL, &wait_timer)) == -1)
+	if ((select(serv->largest_fd + 1, &serv->rfds, &serv->wfds, NULL, &wait_timer)) == -1)
 	{
 		cleanup(serv);
 		exit_error("Error: select failed\n");
@@ -162,27 +258,60 @@ int main(int argc, char **argv)
 			if (!FD_ISSET(client->fd, &serv.rfds))
 				continue ;
 
-			ssize_t rsize = recv(client->fd, client->in_buf, (client->in_buf_size - client->in_buf_used), 0);
+			ssize_t rsize = recv(client->fd, (client->in_buf + client->in_buf_used), (client->in_buf_size - client->in_buf_used), 0);
 			if (rsize == 0)
 			{
-				client->disconnected = 1;
-				++serv.clients_disconnected;
+				client->disconnect = 1;
+				++serv.clients_to_disconnect;
 			}
 			else
 				client->in_buf_used += rsize;
 		}
 
 		// remove disconnected clients
-		for (int i = 0; (serv.clients_disconnected > 0 && i < serv.clients_connected); ++i)
+		for (int i = 0; (serv.clients_to_disconnect > 0 && i < serv.clients_connected); ++i)
 		{
 			client = &serv.clients[i];
 
-			if (!client->disconnected)
+			if (!client->disconnect)
 				continue ;
 
 			close(client->fd);
 			free(client->in_buf);
-			// TODO: broadcast leave message
+
+			// debug
+			printf("client left %d\n", client->id);
+
+			char *msg = create_msg(client->id, LEAVE_MSG, NULL);
+			broadcast_msg(msg,  client->id, &serv);
+			free(msg);
+
+			if (client->fd == serv.largest_fd)
+			{
+				serv.largest_fd = serv.fd;
+
+				for (int j = 0; j < serv.clients_connected; ++j)
+				{
+					if (serv.clients[j].disconnect)
+						continue ;
+					if (serv.clients[j].fd > serv.largest_fd)
+						serv.largest_fd = serv.clients[j].fd;
+				}
+			}
+
+			for (int j = i; j + 1 < serv.clients_connected; ++j)
+			{
+				serv.clients[j].id = serv.clients[j+1].id;
+				serv.clients[j].fd = serv.clients[j+1].fd;
+				serv.clients[j].disconnect = serv.clients[j+1].disconnect;
+				serv.clients[j].in_buf_size = serv.clients[j+1].in_buf_size;
+				serv.clients[j].in_buf_used = serv.clients[j+1].in_buf_used;
+				serv.clients[j].in_buf = serv.clients[j+1].in_buf;
+			}
+
+			bzero(&serv.clients[serv.clients_connected], sizeof(t_client));
+			--serv.clients_to_disconnect;
+			--serv.clients_connected;
 		}
 
 		// send received messages
@@ -193,8 +322,17 @@ int main(int argc, char **argv)
 			if (client->in_buf_used <= 0)
 				continue ;
 
-			// get message
-			// broadcast message
+			char *client_msg, *msg;
+			int ret = extract_message(&client->in_buf, &client_msg, client);
+			if (ret == -1)
+				exit_error("Error: alloacation failed\n");
+			else if (ret == 0)
+				continue ;
+
+			msg = create_msg(client->id, CLIENT_MSG, client_msg);
+			free(client_msg);
+			broadcast_msg(msg, client->id, &serv);
+			free(msg);
 		}
 	}
 
