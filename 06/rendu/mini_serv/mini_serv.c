@@ -93,11 +93,10 @@ void broadcast_msg(const char *msg, int size, int sender_fd)
 	{
 		client = &g_clients[i];
 
-		if (!client->connected || i == sender_fd)
+		if (!client->connected || i == sender_fd || !FD_ISSET(i, &g_server.w_fds))
 			continue ;
 
-		if (send(i, msg, size, MSG_NOSIGNAL) == -1)
-			disconnect_client(i);
+		send(i, msg, size, MSG_NOSIGNAL);
 	}
 }
 
@@ -239,20 +238,23 @@ void send_bytes(int client_fd)
 	t_client *client = &g_clients[client_fd];
 	int str_size;
 
-	if (client->connected || client->buffer_used <= 0)
+	if (!client->connected)
 		return ;
 
-	str_size = extract_message(client->buffer, client->buffer_used);
+	while (client->buffer_used > 0)
+	{
+		str_size = extract_message(client->buffer, client->buffer_used);
 
-	if (str_size <= 0)
-		return ;
+		if (str_size <= 0)
+			return ;
 
-	int msg_size = sprintf(g_server.buffer, "client %d: %s\n", client->id, client->buffer);
-	broadcast_msg(g_server.buffer, msg_size, client_fd);
+		int msg_size = sprintf(g_server.buffer, "client %d: %s\n", client->id, client->buffer);
+		broadcast_msg(g_server.buffer, msg_size, client_fd);
 
-	shift_string(client->buffer, client->buffer_used, str_size);
-	client->buffer_used -= str_size;
-	client->buffer[client->buffer_used] = '\0';
+		shift_string(client->buffer, client->buffer_used, str_size);
+		client->buffer_used -= str_size;
+		client->buffer[client->buffer_used] = '\0';
+	}
 }
 
 void route_msgs(void)
