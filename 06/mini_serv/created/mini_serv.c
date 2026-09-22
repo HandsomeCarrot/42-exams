@@ -1,5 +1,4 @@
 #include <string.h>
-// #include <sys/select.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -10,7 +9,7 @@
 enum constants
 {
 	MAX_CLIENTS = FD_SETSIZE,
-	CLIENT_BUFFER_SIZE = 1024, // probably better to set to a higher value (e.g. 2^16 = 65536)
+	CLIENT_BUFFER_SIZE = 1024, // could be better if set to a higher value (e.g. 2^16 = 65536)
 	SERVER_MSGS_MAX_SIZE = 40,
 	SERVER_BUFFER_SIZE = (CLIENT_BUFFER_SIZE + SERVER_MSGS_MAX_SIZE),
 	CONNECTION_QUEUE_SIZE = 10
@@ -32,7 +31,7 @@ typedef struct server
 	fd_set	all_fds;
 	fd_set	r_fds;
 	fd_set	w_fds;
-	char	buffer[SERVER_BUFFER_SIZE]; // maybe not needed
+	char	buffer[SERVER_BUFFER_SIZE];
 }			t_server;
 
 t_server	g_server;
@@ -41,13 +40,18 @@ t_client	g_clients[MAX_CLIENTS];
 /**
  * \brief Terminates the program with a fatal error.
  *
- * Writes "Fatal error\n" to STDERR and exits with status 1.
+ * Writes "Fatal error\n" to STDERR, closes the server socket (if valid)
+ * and exits with status 1.
  * Called whenever an unrecoverable error occurs (e.g. socket,
  * bind or listen failure).
  */
 void exit_fatal(void)
 {
 	write(STDERR_FILENO, "Fatal error\n", 12);
+
+	if (g_server.fd >= 0)
+		close (g_server.fd);
+
 	exit(1);
 }
 
@@ -288,10 +292,10 @@ void receive_bytes(int client_fd)
  */
 int extract_message(char *str, int size)
 {
-	int	newline_pos = 0;
-
 	if (!str)
 		return (0);
+
+	int	newline_pos = 0;
 
 	while (newline_pos < size && str[newline_pos] != '\n')
 		++newline_pos;
@@ -372,13 +376,9 @@ void send_bytes(int client_fd)
  */
 void route_msgs(void)
 {
-	t_client *client;
-
 	for (int i = 0; i <= g_server.max_fd; ++i)
 	{
-		client = &g_clients[i];
-
-		if (!client->connected)
+		if (!g_clients[i].connected)
 			continue ;
 
 		receive_bytes(i);

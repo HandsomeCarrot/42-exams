@@ -4,8 +4,13 @@
 compile_flags.txt
 .kilo/*
 build/*
-test
 
-# exam 04
+# rank 04
 04/vbc/res2/vbc
 04/vbc/res/vbc
+
+# rank 05
+test
+
+# rank 06
+serv_*
