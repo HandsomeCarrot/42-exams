@@ -1,339 +1,291 @@
-#include <netinet/in.h>
-#include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#include <strings.h>
 #include <sys/select.h>
-#include <sys/socket.h>
-#include <sys/types.h>
 #include <unistd.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+
+enum constants
+{
+	MAX_CLIENTS = FD_SETSIZE,
+	CLIENT_BUFFER_SIZE = 1024, // probably better to set to a higher value (e.g. 2^16 = 65536)
+	SERVER_MSGS_MAX_SIZE = 40,
+	SERVER_BUFFER_SIZE = (CLIENT_BUFFER_SIZE + SERVER_MSGS_MAX_SIZE)
+}	;
+
+typedef enum msg_type
+{
+	JOIN_MSG,
+	LEAVE_MSG,
+	CLIENT_MSG
+}	t_msg_type;
 
 typedef struct client
 {
-	int	    id;
-	int		fd;
-	char	*in_buf;
-	int		in_buf_size;
-	int		in_buf_used;
-	int		disconnect;
+	int		id;
+	int		connected;
+	int		buffer_used;
+	char	buffer[CLIENT_BUFFER_SIZE];
 }			t_client;
 
 typedef struct server
 {
-	int					fd;
-	struct sockaddr_in	addr;
-	fd_set				rfds;
-	fd_set				wfds;
-	t_client			*clients;
-	int					clients_connected;
-	int					clients_reserved;
-	int					clients_to_disconnect;
-	int					largest_fd;
-	int					next_id;
-}						t_server;
+	int		fd;
+	int		max_fd;
+	int		next_id;
+	fd_set	all_fds;
+	fd_set	r_fds;
+	fd_set	w_fds;
+	char	buffer[SERVER_BUFFER_SIZE]; // maybe not needed
+}			t_server;
 
-typedef enum msg_type
-{
-    JOIN_MSG,
-    LEAVE_MSG,
-    CLIENT_MSG
-}   t_msg_type;
+t_server	g_server;
+t_client	g_clients[MAX_CLIENTS];
 
-void cleanup(t_server *serv)
+void exit_fatal(void)
 {
-	// TODO
-	(void)serv;
-}
-
-void exit_error(const char *msg)
-{
-	write(STDERR_FILENO, msg, strlen(msg));
+	write(2, "Fatal error\n", 12);
 	exit(1);
 }
 
-int extract_message(char **buf, char **msg, t_client *client)
+void init_server(char *port)
 {
-	char	*newbuf;
-	int	i;
+	g_server.fd = socket(AF_INET, SOCK_STREAM, 0);
+	if (g_server.fd < 0)
+		exit_fatal();
 
-	*msg = 0;
-	if (*buf == 0)
-		return (0);
-	i = 0;
-	while ((*buf)[i])
-	{
-		if ((*buf)[i] == '\n')
-		{
-			newbuf = calloc(1, client->in_buf_size);
-			if (newbuf == 0)
-				return (-1);
-			strcpy(newbuf, *buf + i + 1);
-			*msg = *buf;
-			(*msg)[i + 1] = 0;
-			*buf = newbuf;
-			client->in_buf_used -= i;
-			return (1);
-		}
-		i++;
-	}
-	return (0);
+	struct sockaddr_in addr;
+	addr.sin_family = AF_INET;
+	addr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
+	addr.sin_port = htons(atoi(port));
+
+	if (bind(g_server.fd, (const struct sockaddr *)&addr, sizeof(addr)) != 0)
+		exit_fatal();
+
+	if (listen(g_server.fd, 10) == -1)
+		exit_fatal();
+
+	g_server.max_fd = g_server.fd;
+	g_server.next_id = 0;
+	FD_ZERO(&g_server.all_fds);
+	FD_SET(g_server.fd, &g_server.all_fds);
 }
 
-char *create_msg(int sender_id, t_msg_type type, const char *msg)
+void scan_events(void)
 {
-	char *complete_msg = NULL;
-	int complete_msg_len = 10;
-	int ret = 0;
+	g_server.r_fds = g_server.all_fds;
+	g_server.w_fds = g_server.all_fds;
 
-	switch (type)
-	{
-		case JOIN_MSG:
-			complete_msg_len += 29;
-			break ;
-		case LEAVE_MSG:
-			complete_msg_len += 26;
-			break ;
-		case CLIENT_MSG:
-			complete_msg_len += strlen(msg) + 9;
-			break ;
-	}
-
-
-	complete_msg = calloc((complete_msg_len + 1), sizeof(char));
-	if (!complete_msg)
-		return (NULL);
-
-	switch (type)
-	{
-		case JOIN_MSG:
-			ret = sprintf(complete_msg, "server: client %d just arrived\n", sender_id);
-			break ;
-		case LEAVE_MSG:
-			ret = sprintf(complete_msg, "server: client %d just left\n", sender_id);
-			break ;
-		case CLIENT_MSG:
-			ret = sprintf(complete_msg, "client %d: %s", sender_id, msg);
-			break ;
-	}
-
-	if (ret < 0)
-		return (NULL);
-
-	return (complete_msg);
+	select(g_server.max_fd + 1, &g_server.r_fds, &g_server.w_fds, NULL, NULL);
 }
 
-void broadcast_msg(const char *msg, int sender_id, t_server *serv)
+void disconnect_client(int fd);
+
+void broadcast_msg(const char *msg, int size, int sender_fd)
 {
-	size_t msg_len = strlen(msg);
-
-	for (int i = 0; i < serv->clients_connected; ++i)
-	{
-	    if (serv->clients[i].id == sender_id)
-			continue ;
-
-		if ((send(serv->clients[i].fd, msg, msg_len, 0)) == -1)
-			serv->clients[i].disconnect = 1;
-	}
-}
-
-void reserve_clients(t_server *serv)
-{
-	if (serv->clients_reserved > serv->clients_connected)
+	if (!msg || size < 1)
 		return ;
 
-	serv->clients_reserved = serv->clients_reserved == 0 ? 8 : (serv->clients_reserved * 2);
-	t_client *tmp_clients = realloc(serv->clients, serv->clients_reserved * sizeof(t_client));
-	if (!tmp_clients)
+	t_client *client;
+	for (int i = 0; i <= g_server.max_fd; ++i)
 	{
-		cleanup(serv);
-		exit_error("Error: memory allocation failure\n");
+		client = &g_clients[i];
+
+		if (!client->connected || i == sender_fd)
+			continue ;
+
+		if (send(i, msg, size, MSG_NOSIGNAL) == -1)
+			disconnect_client(i);
 	}
-	serv->clients = tmp_clients;
 }
 
-int register_client(t_server *serv, int new_fd)
+void disconnect_client(int fd)
 {
-	int buf_max_chars = 250;
-	char *new_buf = calloc(buf_max_chars, sizeof(char));
-	if (!new_buf)
+	g_clients[fd].connected = 0;
+	FD_CLR(fd, &g_server.all_fds);
+	close(fd);
+
+	int msg_size = sprintf(g_server.buffer, "server: client %d just left\n", g_clients[fd].id);
+	broadcast_msg(g_server.buffer, msg_size, fd);
+
+	if (fd != g_server.max_fd)
+		return ;
+
+	g_server.max_fd = g_server.fd;
+
+	for (int i = (fd - 1); i > g_server.fd; --i)
 	{
-		cleanup(serv);
-		exit_error("Error: memory allocation failed\n");
+		if (g_clients[i].connected)
+		{
+			g_server.max_fd = i;
+			break ;
+		}
 	}
-
-	t_client *new_client = &serv->clients[serv->clients_connected];
-	bzero(new_client, sizeof(t_client));
-	new_client->fd = new_fd;
-	new_client->id = serv->next_id;
-	new_client->in_buf = new_buf;
-	new_client->in_buf_size = buf_max_chars * sizeof(char);
-
-	++serv->clients_connected;
-	++serv->next_id;
-	if (new_client->fd > serv->largest_fd)
-		serv->largest_fd = new_client->fd;
-
-	// debug
-	printf("new client %d\n", new_client->id);
-
-	return (new_client->id);
 }
 
-void handle_new_client(t_server *serv)
+void receive_clients(void)
 {
-	int new_fd = accept(serv->fd, NULL, NULL);
-	if (new_fd < 0)
-		return;
-	reserve_clients(serv);
-	int new_id = register_client(serv, new_fd);
+	if (!FD_ISSET(g_server.fd, &g_server.r_fds))
+		return ;
 
-	char *msg = create_msg(new_id, JOIN_MSG	, NULL);
-	broadcast_msg(msg,  new_id, serv);
-	free(msg);
-}
+	int client_fd = accept(g_server.fd, NULL, NULL);
 
-void init_server(t_server *serv, char *port)
-{
-	bzero(serv, sizeof(t_server));
-
-	serv->fd = socket(AF_INET, SOCK_STREAM, 0);
-	if (serv->fd == -1)
-		exit_error("Error: socket failed\n");
-
-	serv->addr.sin_family = AF_INET;
-	serv->addr.sin_addr.s_addr = htonl(2130706433);
-	serv->addr.sin_port = htons(atoi(port));
-
-	if (bind(serv->fd, (const struct sockaddr *) &serv->addr, sizeof(serv->addr)) == -1)
-		exit_error("Error: bind failed\n");
-
-	if (listen(serv->fd, 10) == -1)
-		exit_error("Error: listen failed\n");
-
-	serv->largest_fd = serv->fd;
-	serv->next_id = 0;
-}
-
-void wait_for_events(t_server *serv)
-{
-	FD_ZERO(&serv->rfds);
-	FD_ZERO(&serv->wfds);
-	FD_SET(serv->fd, &serv->rfds);
-	for (int i = 0; i < serv->clients_connected; ++i)
+	if (client_fd < 0)
+		return ;
+	if (client_fd >= MAX_CLIENTS)
 	{
-		FD_SET(serv->clients[i].fd, &serv->rfds);
-		FD_SET(serv->clients[i].fd, &serv->wfds);
+		close(client_fd);
+		return ;
 	}
 
-	struct timeval wait_timer = {0,0};
-	if ((select(serv->largest_fd + 1, &serv->rfds, &serv->wfds, NULL, &wait_timer)) == -1)
+	t_client *client = &g_clients[client_fd];
+	client->connected = 1;
+	client->id = g_server.next_id++;
+	client->buffer_used = 0;
+	FD_SET(client_fd, &g_server.all_fds);
+
+	if (client_fd > g_server.max_fd)
+		g_server.max_fd = client_fd;
+
+	int size = sprintf(g_server.buffer, "server: client %d just arrived\n", client->id);
+	broadcast_msg(g_server.buffer, size, client_fd);
+}
+
+void receive_bytes(int client_fd)
+{
+	if (!FD_ISSET(client_fd, &g_server.r_fds))
+		return ;
+
+	t_client *client = &g_clients[client_fd];
+
+	int buffer_room = CLIENT_BUFFER_SIZE - client->buffer_used - 1;
+
+	if (buffer_room <= 0)
 	{
-		cleanup(serv);
-		exit_error("Error: select failed\n");
+		disconnect_client(client_fd);
+		return ;
+	}
+
+	ssize_t received = recv(client_fd, (client->buffer + client->buffer_used), buffer_room, 0);
+
+	if (received <= 0)
+	{
+		disconnect_client(client_fd);
+		return ;
+	}
+
+	client->buffer_used += received;
+	client->buffer[client->buffer_used] = '\0';
+}
+
+/**
+ * \brief 'Extracts' a message from the string.
+ *
+ * Scans `str` for the first newline character '\n' within the first
+ * `size` bytes and replaces it with a null byte '\0', effectively
+ * terminating the message in place at that point.
+ *
+ * \param str - the string from which the message will be extracted.
+ * \param size - the size of the given string (upper scan bound).
+ *
+ * \return The number of bytes consumed by the extracted message: the
+ * offset of the '\n' plus one (i.e. the length of the message,
+ * newline included but replaced by '\0'). Returns `0` if:
+ * - str == NULL.
+ * - no newline character '\n' was found within the first `size` bytes.
+ */
+int extract_message(char *str, int size)
+{
+	int	newline_pos = 0;
+
+	if (!str)
+		return (0);
+
+	while (newline_pos < size && str[newline_pos] != '\n')
+		++newline_pos;
+
+	if (newline_pos == size)
+		return (0); // nothing found
+
+	str[newline_pos] = '\0';
+	return (newline_pos + 1);
+}
+
+/**
+ * \brief Shifts a string left by `shift` characters.
+ *
+ * Copies the substring starting at `str[shift]` to the beginning of
+ * `str`. The first `shift` characters are effectively discarded.
+ *
+ * \note Does nothing if `str` is NULL or if `shift >= size`.
+ *
+ * \param str The string to shift in place.
+ * \param size The size of the buffer, used as an upper bound.
+ * \param shift Number of characters to remove from the front.
+ */
+void shift_string(char *str, size_t size, size_t shift)
+{
+	if (!str || shift >= size)
+		return ;
+
+	for (int i = 0; (i + shift) < size; ++i)
+		str[i] = str[i + shift];
+}
+
+void send_bytes(int client_fd)
+{
+	t_client *client = &g_clients[client_fd];
+	int str_size;
+
+	if (client->connected || client->buffer_used <= 0)
+		return ;
+
+	str_size = extract_message(client->buffer, client->buffer_used);
+
+	if (str_size <= 0)
+		return ;
+
+	int msg_size = sprintf(g_server.buffer, "client %d: %s\n", client->id, client->buffer);
+	broadcast_msg(g_server.buffer, msg_size, client_fd);
+
+	shift_string(client->buffer, client->buffer_used, str_size);
+	client->buffer_used -= str_size;
+	client->buffer[client->buffer_used] = '\0';
+}
+
+void route_msgs(void)
+{
+	t_client *client;
+
+	for (int i = 0; i <= g_server.max_fd; ++i)
+	{
+		client = &g_clients[i];
+
+		if (!client->connected)
+			continue ;
+
+		receive_bytes(i);
+		send_bytes(i);
 	}
 }
 
 int main(int argc, char **argv)
 {
 	if (argc != 2)
-		exit_error("Wrong number of arguments\n");
+	{
+		write(STDERR_FILENO, "Wrong number of arguments\n", 26);
+		exit(1);
+	}
 
-	t_server serv;
-
-	init_server(&serv, argv[1]);
+	init_server(argv[1]);
 
 	while (1)
 	{
-		wait_for_events(&serv);
-
-		if (FD_ISSET(serv.fd, &serv.rfds))
-			handle_new_client(&serv);
-
-		// receive messages from clients
-		t_client *client;
-		for (int i = 0; i < serv.clients_connected; ++i)
-		{
-			client = &serv.clients[i];
-
-			if (!FD_ISSET(client->fd, &serv.rfds))
-				continue ;
-
-			ssize_t rsize = recv(client->fd, (client->in_buf + client->in_buf_used), (client->in_buf_size - client->in_buf_used), 0);
-			if (rsize == 0)
-			{
-				client->disconnect = 1;
-				++serv.clients_to_disconnect;
-			}
-			else
-				client->in_buf_used += rsize;
-		}
-
-		// remove disconnected clients
-		for (int i = 0; (serv.clients_to_disconnect > 0 && i < serv.clients_connected); ++i)
-		{
-			client = &serv.clients[i];
-
-			if (!client->disconnect)
-				continue ;
-
-			close(client->fd);
-			free(client->in_buf);
-
-			// debug
-			printf("client left %d\n", client->id);
-
-			char *msg = create_msg(client->id, LEAVE_MSG, NULL);
-			broadcast_msg(msg,  client->id, &serv);
-			free(msg);
-
-			if (client->fd == serv.largest_fd)
-			{
-				serv.largest_fd = serv.fd;
-
-				for (int j = 0; j < serv.clients_connected; ++j)
-				{
-					if (serv.clients[j].disconnect)
-						continue ;
-					if (serv.clients[j].fd > serv.largest_fd)
-						serv.largest_fd = serv.clients[j].fd;
-				}
-			}
-
-			for (int j = i; j + 1 < serv.clients_connected; ++j)
-			{
-				serv.clients[j].id = serv.clients[j+1].id;
-				serv.clients[j].fd = serv.clients[j+1].fd;
-				serv.clients[j].disconnect = serv.clients[j+1].disconnect;
-				serv.clients[j].in_buf_size = serv.clients[j+1].in_buf_size;
-				serv.clients[j].in_buf_used = serv.clients[j+1].in_buf_used;
-				serv.clients[j].in_buf = serv.clients[j+1].in_buf;
-			}
-
-			bzero(&serv.clients[serv.clients_connected], sizeof(t_client));
-			--serv.clients_to_disconnect;
-			--serv.clients_connected;
-		}
-
-		// send received messages
-		for (int i = 0; i < serv.clients_connected; ++i)
-		{
-			client = &serv.clients[i];
-
-			if (client->in_buf_used <= 0)
-				continue ;
-
-			char *client_msg, *msg;
-			int ret = extract_message(&client->in_buf, &client_msg, client);
-			if (ret == -1)
-				exit_error("Error: alloacation failed\n");
-			else if (ret == 0)
-				continue ;
-
-			msg = create_msg(client->id, CLIENT_MSG, client_msg);
-			free(client_msg);
-			broadcast_msg(msg, client->id, &serv);
-			free(msg);
-		}
+		scan_events();
+		receive_clients();
+		route_msgs();
 	}
 
 	exit(0);
