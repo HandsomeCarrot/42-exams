@@ -1,19 +1,25 @@
-NAME := test
+SELECT_NAME := serv_select
+POLL_NAME := serv_poll
 
 CC := cc
-CFLAGS := -fsanitize=address,undefined,leak -g -Wall -Wextra -Werror
+CFLAGS := -Wall -Wextra -Werror -g -fsanitize=address,undefined,leak
 INCLUDE := -Icreated
 COMP := $(CC) $(CFLAGS) $(INCLUDE)
 
-SRCS :=	created/mini_serv.c
+SELECT_SRC := created/mini_serv.c
+POLL_SRC := created/mini_serv_poll.c
 
 B := build
-OBJS := $(SRCS:%.c=$(B)/%.o)
+SELECT_OBJ := $(SELECT_SRC:%.c=$(B)/%.o)
+POLL_OBJ := $(POLL_SRC:%.c=$(B)/%.o)
 
-all: $(NAME)
+all: $(SELECT_NAME)
 
-$(NAME): $(OBJS)
-	$(COMP) $(OBJS) -o $(NAME)
+$(SELECT_NAME): $(SELECT_OBJ)
+	$(COMP) $(SELECT_OBJ) -o $(SELECT_NAME)
+
+$(POLL_NAME): $(POLL_OBJ)
+	$(COMP) $(POLL_OBJ) -o $(POLL_NAME)
 
 $(B)/%.o: %.c
 	@mkdir -p $(@D)
@@ -23,7 +29,7 @@ clean:
 	rm -rf $(B)
 
 fclean: clean
-	rm -rf $(NAME)
+	rm -rf $(SELECT_NAME) $(POLL_NAME)
 
 re: fclean all
 
