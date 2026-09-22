@@ -1,5 +1,5 @@
 #include <string.h>
-#include <sys/select.h>
+// #include <sys/select.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -12,15 +12,9 @@ enum constants
 	MAX_CLIENTS = FD_SETSIZE,
 	CLIENT_BUFFER_SIZE = 1024, // probably better to set to a higher value (e.g. 2^16 = 65536)
 	SERVER_MSGS_MAX_SIZE = 40,
-	SERVER_BUFFER_SIZE = (CLIENT_BUFFER_SIZE + SERVER_MSGS_MAX_SIZE)
+	SERVER_BUFFER_SIZE = (CLIENT_BUFFER_SIZE + SERVER_MSGS_MAX_SIZE),
+	CONNECTION_QUEUE_SIZE = 10
 }	;
-
-typedef enum msg_type
-{
-	JOIN_MSG,
-	LEAVE_MSG,
-	CLIENT_MSG
-}	t_msg_type;
 
 typedef struct client
 {
@@ -46,7 +40,7 @@ t_client	g_clients[MAX_CLIENTS];
 
 void exit_fatal(void)
 {
-	write(2, "Fatal error\n", 12);
+	write(STDERR_FILENO, "Fatal error\n", 12);
 	exit(1);
 }
 
@@ -64,7 +58,7 @@ void init_server(char *port)
 	if (bind(g_server.fd, (const struct sockaddr *)&addr, sizeof(addr)) != 0)
 		exit_fatal();
 
-	if (listen(g_server.fd, 10) == -1)
+	if (listen(g_server.fd, CONNECTION_QUEUE_SIZE) == -1)
 		exit_fatal();
 
 	g_server.max_fd = g_server.fd;
@@ -80,8 +74,6 @@ void scan_events(void)
 
 	select(g_server.max_fd + 1, &g_server.r_fds, &g_server.w_fds, NULL, NULL);
 }
-
-void disconnect_client(int fd);
 
 void broadcast_msg(const char *msg, int size, int sender_fd)
 {
@@ -124,6 +116,22 @@ void disconnect_client(int fd)
 	}
 }
 
+void register_client(int fd)
+{
+	t_client *client = &g_clients[fd];
+
+	client->connected = 1;
+	client->id = g_server.next_id++;
+	client->buffer_used = 0;
+	FD_SET(fd, &g_server.all_fds);
+
+	if (fd > g_server.max_fd)
+		g_server.max_fd = fd;
+
+	int size = sprintf(g_server.buffer, "server: client %d just arrived\n", client->id);
+	broadcast_msg(g_server.buffer, size, fd);
+}
+
 void receive_clients(void)
 {
 	if (!FD_ISSET(g_server.fd, &g_server.r_fds))
@@ -139,17 +147,7 @@ void receive_clients(void)
 		return ;
 	}
 
-	t_client *client = &g_clients[client_fd];
-	client->connected = 1;
-	client->id = g_server.next_id++;
-	client->buffer_used = 0;
-	FD_SET(client_fd, &g_server.all_fds);
-
-	if (client_fd > g_server.max_fd)
-		g_server.max_fd = client_fd;
-
-	int size = sprintf(g_server.buffer, "server: client %d just arrived\n", client->id);
-	broadcast_msg(g_server.buffer, size, client_fd);
+	register_client(client_fd);
 }
 
 void receive_bytes(int client_fd)
