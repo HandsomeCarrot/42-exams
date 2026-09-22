@@ -37,6 +37,14 @@ typedef struct server
 t_server	g_server;
 t_client	g_clients[MAX_CLIENTS];
 
+/**
+ * \brief Terminates the program with a fatal error.
+ *
+ * Writes "Fatal error\n" to STDERR, closes the server socket (if valid)
+ * and exits with status 1.
+ * Called whenever an unrecoverable error occurs (e.g. socket,
+ * bind or listen failure).
+ */
 void exit_fatal(void)
 {
 	write(STDERR_FILENO, "Fatal error\n", 12);
@@ -47,6 +55,21 @@ void exit_fatal(void)
 	exit(1);
 }
 
+/**
+ * \brief Creates, binds and listens on the server socket.
+ *
+ * Creates a TCP (AF_INET, SOCK_STREAM) socket bound to 127.0.0.1
+ * on the given port and puts it into listening state with a backlog
+ * of CONNECTION_QUEUE_SIZE. Initializes `g_server.poll_fds`
+ * (all slots to fd -1, listening fd to POLLIN),
+ * `g_server.largest_fd` and relies on static zero-initialization
+ * for `g_server.next_id`.
+ *
+ * \param port Port number in host byte order (already converted
+ * with atoi by the caller, converted to network order with htons).
+ *
+ * \note Calls exit_fatal() if socket(), bind() or listen() fails.
+ */
 void init_server(int port)
 {
 	g_server.fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -72,6 +95,20 @@ void init_server(int port)
 	g_server.poll_fds[g_server.fd].events = POLLIN;
 }
 
+/**
+ * \brief Sends a message to every connected client except the sender.
+ *
+ * Iterates over `[0, g_server.largest_fd]` and calls send() with
+ * MSG_NOSIGNAL on each connected client that is marked writable
+ * (`POLLOUT` in `g_server.poll_fds[i].revents`), skipping `sender_fd`.
+ *
+ * \param msg Buffer holding the bytes to send.
+ * \param size Number of bytes to send from `msg`.
+ * \param sender_fd File descriptor to exclude (sender, or listening
+ * socket fd when the message originates from the server itself).
+ *
+ * \note Send errors are ignored.
+ */
 void broadcast_msg(char *msg, int size, int sender_fd)
 {
 	t_client *client;
@@ -87,6 +124,24 @@ void broadcast_msg(char *msg, int size, int sender_fd)
 	}
 }
 
+/**
+ * \brief Accepts a pending connection on the listening socket.
+ *
+ * Does nothing unless the listening socket `g_server.fd` is marked
+ * readable (`POLLIN` in its `revents`). Otherwise calls accept();
+ * on success initializes the `g_clients[new_fd]` slot
+ * (`connected = 1`, `id = g_server.next_id++`, `buf_used = 0`),
+ * registers `new_fd` in `g_server.poll_fds` with
+ * `events = POLLIN | POLLOUT`, updates `g_server.largest_fd`
+ * if needed, and broadcasts "server: client %d just arrived\n".
+ *
+ * Connections with `new_fd < 0` are ignored, and connections with
+ * `new_fd >= MAX_CLIENTS` are immediately closed to stay within
+ * the `g_clients` / `g_server.poll_fds` tables.
+ *
+ * \note Unlike the select implementation, registration is done
+ * inline here instead of a separate register_client() helper.
+ */
 void receive_client(void)
 {
 	if (!(g_server.poll_fds[g_server.fd].revents & POLLIN))
@@ -115,6 +170,18 @@ void receive_client(void)
 	broadcast_msg(g_server.buf, msg_size, new_fd);
 }
 
+/**
+ * \brief Disconnects a client and notifies the others.
+ *
+ * Marks `g_clients[fd]` as disconnected, clears its buffer state,
+ * removes `fd` from `g_server.poll_fds` (`fd = -1`, `events = 0`),
+ * closes it, and broadcasts "server: client %d just left\n".
+ * If `fd` was `g_server.largest_fd`, scans downwards to recompute
+ * the new `g_server.largest_fd`.
+ *
+ * \param fd File descriptor (index into `g_clients`) of the client
+ * to disconnect.
+ */
 void disconnect_client(int fd)
 {
 	t_client *client = &g_clients[fd];
@@ -142,6 +209,20 @@ void disconnect_client(int fd)
 	broadcast_msg(g_server.buf, msg_size, fd);
 }
 
+/**
+ * \brief Reads available bytes from a client into its buffer.
+ *
+ * Does nothing unless `fd` is marked readable (`POLLIN` in
+ * `g_server.poll_fds[fd].revents`). Otherwise appends up to the
+ * remaining free space (`CLIENT_BUFFER_SIZE - buf_used - 1`,
+ * reserving one byte for the terminating '\0') via recv() and
+ * NUL-terminates the buffer.
+ *
+ * \param fd File descriptor (index into `g_clients`) to read from.
+ *
+ * \note Disconnects the client via disconnect_client() if the buffer
+ * is full or if recv() returns <= 0 (error or orderly shutdown).
+ */
 void receive_msg(int fd)
 {
 	if (!(g_server.poll_fds[fd].revents & POLLIN))
@@ -167,6 +248,21 @@ void receive_msg(int fd)
 	client->buf[client->buf_used] = '\0';
 }
 
+/**
+ * \brief 'Extracts' a message from the string.
+ *
+ * Scans `str` for the first newline character '\n' within the first
+ * `size` bytes and replaces it with a null byte '\0', effectively
+ * terminating the message in place at that point.
+ *
+ * \param str - the string from which the message will be extracted.
+ * \param size - the size of the given string (upper scan bound).
+ *
+ * \return The number of bytes consumed by the extracted message: the
+ * offset of the '\n' plus one (i.e. the length of the message,
+ * newline included but replaced by '\0'). Returns `0` if no newline
+ * character '\n' was found within the first `size` bytes.
+ */
 int extract_msg(char *str, int size)
 {
 	int pos = 0;
@@ -180,6 +276,17 @@ int extract_msg(char *str, int size)
 	return (pos + 1);
 }
 
+/**
+ * \brief Shifts a string left by `shift` characters.
+ *
+ * Copies the substring starting at `str[shift]` to the beginning of
+ * `str` and NUL-terminates the result. The first `shift` characters
+ * are effectively discarded.
+ *
+ * \param str The string to shift in place.
+ * \param size The size of the buffered data, used as an upper bound.
+ * \param shift Number of characters to remove from the front.
+ */
 void shift_str(char *str, int size, int shift)
 {
 	for (int i = 0; i < size - shift; ++i)
@@ -187,6 +294,21 @@ void shift_str(char *str, int size, int shift)
 	str[size - shift] = '\0';
 }
 
+/**
+ * \brief Flushes complete lines from a client buffer to all others.
+ *
+ * Repeatedly extracts newline-terminated messages with
+ * extract_msg(); each complete message is formatted as
+ * "client %d: %s\n" into `g_server.buf` and relayed with
+ * broadcast_msg(). Consumed bytes are removed with shift_str()
+ * and `buf_used` is adjusted. Stops when the buffer is empty or
+ * no complete line remains.
+ *
+ * \param fd File descriptor (index into `g_clients`) whose buffer
+ * is flushed.
+ *
+ * \note Does nothing if the client is not connected.
+ */
 void send_msgs(int fd)
 {
 	t_client *client = &g_clients[fd];
@@ -207,6 +329,13 @@ void send_msgs(int fd)
 	}
 }
 
+/**
+ * \brief Pumps I/O for every connected client.
+ *
+ * Iterates over `[0, g_server.largest_fd]`; for each connected client
+ * calls receive_msg() followed by send_msgs(), so newly arrived
+ * bytes are read and any complete lines are broadcast.
+ */
 void route_msgs(void)
 {
 	for (int i = 0; i <= g_server.largest_fd; ++i)
@@ -218,6 +347,24 @@ void route_msgs(void)
 	}
 }
 
+/**
+ * \brief Program entry point: runs the chat server event loop.
+ *
+ * Expects exactly one argument (the port). Initializes the server
+ * with init_server(), then loops forever: poll() on
+ * `[0, g_server.largest_fd]`, receive_client(), route_msgs().
+ *
+ * The poll() call blocks indefinitely (timeout -1) over
+ * `g_server.largest_fd + 1` entries; its return value is
+ * intentionally ignored.
+ *
+ * \param argc Argument count; must be 2.
+ * \param argv Argument vector; argv[1] is the port string.
+ *
+ * \return 0 on normal termination (unreachable in practice: the
+ * event loop never exits; misuse prints "Wrong number of
+ * arguments\n" and returns 1).
+ */
 int main(int argc, char **argv)
 {
 	if (argc != 2)

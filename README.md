@@ -31,8 +31,8 @@ dynamic programming problem. Exercises: `polyset`, `bigint`, `vect2`, `life`,
 ### exam 06
 
 C networking exam. A non-blocking TCP chat server bound to 127.0.0.1:
-accepting clients with `select`, assigning ids, and relaying line-based
-messages between them. Exercise: `mini_serv`.
+accepting clients with `select` / `poll`, assigning ids, and relaying line-based
+messages between them. Exercise: `mini_serv` (both `select` and `poll` variants).
 
 ## Structure
 

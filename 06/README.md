@@ -6,7 +6,10 @@ In here are all the exercises, from exam 06, that I did. I tried to find most ma
 
 ## file structure
 
-Each exercise has its own folder, with the exercise name. In it you will find: - a 'readme' - given files - my implementation
+Each exercise has its own folder, with the exercise name. In it you will find:
+- a 'readme'
+- given files
+- my implementation (`mini_serv` has two: `select` and `poll` variants, see its readme)
 
 ## exercise list
 

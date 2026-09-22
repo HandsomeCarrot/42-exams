@@ -2,10 +2,10 @@
 
 ## status
 
-failed (2026-09-17)
+failed (2026-09-22)
 > there can be small differences in the code and subject that I did not notice
 
-> tries: 1
+> tries: 2
 
 ## toc
 
@@ -71,9 +71,21 @@ Files created and implemented for this exercise:
 - `mini_serv_select.c` — implementation using `select`
 - `mini_serv_poll.c` — implementation using `poll`
 
-Both implementations are functionally identical. The only difference is the multiplexing function used by the main loop.
+Both implementations are functionally identical. The only difference is the multiplexing mechanism used by the main loop (see [select vs poll](#select-vs-poll)). Both files are documented with Doxygen comments in the same style.
 
-### usage
+### given
+
+Files you will be given for this exercise, but should not be pushed:
+
+- `main.c` — starter code with a socket/bind/accept skeleton plus `extract_message` / `str_join` helpers (uses forbidden functions, do not copy verbatim into the final program)
+
+### root
+
+All files in here are extra files, that you do not need at all for this exercise:
+
+- `Makefile` — builds `serv_select` (default `make` / `make serv_select`) and `serv_poll` (`make serv_poll`), plus `clean` / `fclean` / `re`
+
+## usage
 
 Compile the `select` implementation:
 
@@ -91,11 +103,13 @@ make serv_poll
 ./serv_poll 8081
 ```
 
-Connect with:
+Connect with (one `nc` per client, from another terminal):
 
 ```bash
 nc 127.0.0.1 8081
 ```
+
+Then type lines + Enter. Each line is relayed to all other clients as `client <id>: <line>`. Connects/disconnects are announced as `server: client <id> just arrived` / `server: client <id> just left`.
 
 ## personal notes
 
@@ -105,4 +119,23 @@ nc 127.0.0.1 8081
 - Client IDs use the arrival order, starting at `0`.
 - Client messages are buffered per client and broadcast line by line.
 - Connect and disconnect notices are sent to the other clients.
-- Everything is stored on the stack, so there are no memory leaks.
+- Everything is stored on the stack / in static storage, so there are no memory leaks.
+
+### logic flow
+
+- parse the port argument, create a TCP socket, bind it to `127.0.0.1`, listen with a small backlog
+- loop forever:
+  1. wait for readiness (`select` over `[0, max_fd]` in `scan_events`, or `poll` over `[0, largest_fd]` directly in `main`)
+  2. accept pending clients (`receive_clients` / `receive_client`): assign `id = next_id++`, init per-client buffer, announce `server: client %d just arrived`
+  3. pump each connected client (`route_msgs`): `recv` available bytes into its buffer (`receive_bytes` / `receive_msg`), then extract every complete `\n`-terminated line and broadcast it as `client %d: %s` (`send_bytes` / `send_msgs`)
+  4. on `recv <= 0` or a full buffer, disconnect the client: close the fd, shrink `max_fd` / `largest_fd`, announce `server: client %d just left`
+- partial lines (no `\n` yet) stay in the per-client buffer; a single `recv` containing multiple `\n` is split and broadcast line by line
+
+### design decisions
+
+- fd-indexed tables: `g_clients[fd]` and (`all_fds` / `poll_fds[fd]`) so lookup is O(1) and no malloc is needed
+- per-client buffer of `CLIENT_BUFFER_SIZE` (1024), reserving one byte for `\0`; one shared server buffer of `CLIENT_BUFFER_SIZE + 40` for the `client %d: ` prefix
+- broadcast only to clients flagged writable (`FD_ISSET(w_fds)` / `POLLOUT` in `revents`), send with `MSG_NOSIGNAL`, ignore send errors — this keeps the server non-blocking without disconnecting lazy clients
+- no `#define`, only an `enum` for constants, to comply with the subject
+- `sprintf` for message formatting; `bzero` / `htonl(2130706433)` for `127.0.0.1`, as in the given `main.c`
+- broadcast directly out of the event loop into a single server buffer, no extra queueing, to satisfy the "send as fast as you can" tester note
