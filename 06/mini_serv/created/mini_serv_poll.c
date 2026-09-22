@@ -1,3 +1,4 @@
+#include <strings.h>
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
@@ -53,6 +54,7 @@ void init_server(int port)
 		exit_fatal();
 
 	struct sockaddr_in addr;
+	bzero(&addr, sizeof(addr));
 	addr.sin_family = AF_INET;
 	addr.sin_addr.s_addr = htonl(2130706433); //127.0.0.1
 	addr.sin_port = htons(port);
@@ -61,6 +63,9 @@ void init_server(int port)
 		exit_fatal();
 	if (listen(g_server.fd, CONNECTION_QUEUE_SIZE) != 0)
 		exit_fatal();
+
+	for (int i = 0; i < MAX_CLIENTS; ++i)
+		g_server.poll_fds[i].fd = -1;
 
 	g_server.largest_fd = g_server.fd;
 	g_server.poll_fds[g_server.fd].fd = g_server.fd;
@@ -128,7 +133,7 @@ void disconnect_client(int fd)
 	if (fd == g_server.largest_fd)
 	{
 		int i = fd - 1;
-		while (i >= g_server.fd && !g_clients[i].connected)
+		while (i > g_server.fd && !g_clients[i].connected)
 			--i;
 		g_server.largest_fd = i;
 	}
@@ -146,16 +151,17 @@ void receive_msg(int fd)
 
 	int buf_room = CLIENT_BUFFER_SIZE - client->buf_used - 1;
 	if (buf_room <= 0)
-		return ;
-
-	int size = recv(fd, client->buf + client->buf_used, buf_room, 0);
-	if (size == 0)
 	{
 		disconnect_client(fd);
 		return ;
 	}
-	if (size < 0)
+
+	int size = recv(fd, client->buf + client->buf_used, buf_room, 0);
+	if (size <= 0)
+	{
+		disconnect_client(fd);
 		return ;
+	}
 
 	client->buf_used += size;
 	client->buf[client->buf_used] = '\0';
@@ -164,7 +170,7 @@ void receive_msg(int fd)
 int extract_msg(char *str, int size)
 {
 	int pos = 0;
-	while (pos < size && str[pos] && str[pos] != '\n')
+	while (pos < size && str[pos] != '\n')
 		++pos;
 
 	if (pos == size)
@@ -178,6 +184,7 @@ void shift_str(char *str, int size, int shift)
 {
 	for (int i = 0; i < size - shift; ++i)
 		str[i] = str[i + shift];
+	str[size - shift] = '\0';
 }
 
 void send_msgs(int fd)
@@ -223,7 +230,7 @@ int main(int argc, char **argv)
 
 	while (1)
 	{
-		poll(g_server.poll_fds, g_server.largest_fd + 1, 1000);
+		poll(g_server.poll_fds, g_server.largest_fd + 1, -1);
 		receive_client();
 		route_msgs();
 	}
