@@ -38,12 +38,32 @@ typedef struct server
 t_server	g_server;
 t_client	g_clients[MAX_CLIENTS];
 
+/**
+ * \brief Terminates the program with a fatal error.
+ *
+ * Writes "Fatal error\n" to STDERR and exits with status 1.
+ * Called whenever an unrecoverable error occurs (e.g. socket,
+ * bind or listen failure).
+ */
 void exit_fatal(void)
 {
 	write(STDERR_FILENO, "Fatal error\n", 12);
 	exit(1);
 }
 
+/**
+ * \brief Creates, binds and listens on the server socket.
+ *
+ * Creates a TCP (AF_INET, SOCK_STREAM) socket bound to 127.0.0.1
+ * on the given port and puts it into listening state with a backlog
+ * of CONNECTION_QUEUE_SIZE. Initializes `g_server.max_fd`,
+ * `g_server.next_id` and `g_server.all_fds`.
+ *
+ * \param port Null-terminated string holding the port number
+ * (converted with atoi and htons).
+ *
+ * \note Calls exit_fatal() if socket(), bind() or listen() fails.
+ */
 void init_server(char *port)
 {
 	g_server.fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -67,6 +87,18 @@ void init_server(char *port)
 	FD_SET(g_server.fd, &g_server.all_fds);
 }
 
+/**
+ * \brief Polls all tracked file descriptors for I/O readiness.
+ *
+ * Copies `g_server.all_fds` into `g_server.r_fds` and
+ * `g_server.w_fds`, then blocks in select() on
+ * `[0, g_server.max_fd]` until at least one descriptor is
+ * readable and/or writable. The resulting sets drive
+ * receive_clients(), receive_bytes() and broadcast_msg().
+ *
+ * \note Blocks indefinitely (no timeout); return value of select()
+ * is intentionally ignored.
+ */
 void scan_events(void)
 {
 	g_server.r_fds = g_server.all_fds;
@@ -75,6 +107,21 @@ void scan_events(void)
 	select(g_server.max_fd + 1, &g_server.r_fds, &g_server.w_fds, NULL, NULL);
 }
 
+/**
+ * \brief Sends a message to every connected client except the sender.
+ *
+ * Iterates over `[0, g_server.max_fd]` and calls send() with
+ * MSG_NOSIGNAL on each connected client that is marked writable
+ * in `g_server.w_fds`, skipping `sender_fd`.
+ *
+ * \param msg Buffer holding the bytes to send.
+ * \param size Number of bytes to send from `msg`.
+ * \param sender_fd File descriptor to exclude (sender, or listening
+ * socket fd when the message originates from the server itself).
+ *
+ * \note Does nothing if `msg` is NULL or `size < 1`. Send errors
+ * are ignored.
+ */
 void broadcast_msg(const char *msg, int size, int sender_fd)
 {
 	if (!msg || size < 1)
@@ -92,6 +139,17 @@ void broadcast_msg(const char *msg, int size, int sender_fd)
 	}
 }
 
+/**
+ * \brief Disconnects a client and notifies the others.
+ *
+ * Marks `g_clients[fd]` as disconnected, removes `fd` from
+ * `g_server.all_fds`, closes it, and broadcasts
+ * "server: client %d just left\n". If `fd` was `g_server.max_fd`,
+ * scans downwards to recompute the new `g_server.max_fd`.
+ *
+ * \param fd File descriptor (index into `g_clients`) of the client
+ * to disconnect.
+ */
 void disconnect_client(int fd)
 {
 	g_clients[fd].connected = 0;
@@ -116,6 +174,17 @@ void disconnect_client(int fd)
 	}
 }
 
+/**
+ * \brief Registers a newly accepted client.
+ *
+ * Initializes the `g_clients[fd]` slot: sets `connected = 1`,
+ * assigns `id = g_server.next_id++`, clears `buffer_used`, adds
+ * `fd` to `g_server.all_fds`, updates `g_server.max_fd` if needed,
+ * and broadcasts "server: client %d just arrived\n".
+ *
+ * \param fd File descriptor (index into `g_clients`) of the new
+ * client, as returned by accept().
+ */
 void register_client(int fd)
 {
 	t_client *client = &g_clients[fd];
@@ -132,6 +201,16 @@ void register_client(int fd)
 	broadcast_msg(g_server.buffer, size, fd);
 }
 
+/**
+ * \brief Accepts pending connections on the listening socket.
+ *
+ * Does nothing unless the listening socket `g_server.fd` is marked
+ * readable in `g_server.r_fds`. Otherwise calls accept(); on success
+ * registers the client via register_client(). Connections with
+ * `client_fd < 0` are ignored, and connections with
+ * `client_fd >= MAX_CLIENTS` are immediately closed to stay within
+ * the `g_clients` table.
+ */
 void receive_clients(void)
 {
 	if (!FD_ISSET(g_server.fd, &g_server.r_fds))
@@ -150,6 +229,20 @@ void receive_clients(void)
 	register_client(client_fd);
 }
 
+/**
+ * \brief Reads available bytes from a client into its buffer.
+ *
+ * Does nothing unless `client_fd` is marked readable in
+ * `g_server.r_fds`. Otherwise appends up to the remaining free
+ * space (`CLIENT_BUFFER_SIZE - buffer_used - 1`, reserving one byte
+ * for the terminating '\0') via recv() and NUL-terminates the buffer.
+ *
+ * \param client_fd File descriptor (index into `g_clients`) to read
+ * from.
+ *
+ * \note Disconnects the client via disconnect_client() if the buffer
+ * is full or if recv() returns <= 0 (error or orderly shutdown).
+ */
 void receive_bytes(int client_fd)
 {
 	if (!FD_ISSET(client_fd, &g_server.r_fds))
@@ -231,6 +324,21 @@ void shift_string(char *str, size_t size, size_t shift)
 		str[i] = str[i + shift];
 }
 
+/**
+ * \brief Flushes complete lines from a client buffer to all others.
+ *
+ * Repeatedly extracts newline-terminated messages with
+ * extract_message(); each complete message is formatted as
+ * "client %d: %s\n" into `g_server.buffer` and relayed with
+ * broadcast_msg(). Consumed bytes are removed with shift_string()
+ * and `buffer_used` is adjusted. Stops when the buffer is empty or
+ * no complete line remains.
+ *
+ * \param client_fd File descriptor (index into `g_clients`) whose
+ * buffer is flushed.
+ *
+ * \note Does nothing if the client is not connected.
+ */
 void send_bytes(int client_fd)
 {
 	t_client *client = &g_clients[client_fd];
@@ -255,6 +363,13 @@ void send_bytes(int client_fd)
 	}
 }
 
+/**
+ * \brief Pumps I/O for every connected client.
+ *
+ * Iterates over `[0, g_server.max_fd]`; for each connected client
+ * calls receive_bytes() followed by send_bytes(), so newly arrived
+ * bytes are read and any complete lines are broadcast.
+ */
 void route_msgs(void)
 {
 	t_client *client;
@@ -271,6 +386,20 @@ void route_msgs(void)
 	}
 }
 
+/**
+ * \brief Program entry point: runs the chat server event loop.
+ *
+ * Expects exactly one argument (the port). Initializes the server
+ * with init_server(), then loops forever: scan_events(),
+ * receive_clients(), route_msgs().
+ *
+ * \param argc Argument count; must be 2.
+ * \param argv Argument vector; argv[1] is the port string.
+ *
+ * \return 0 on normal termination (unreachable in practice: the
+ * event loop never exits; misuse prints "Wrong number of
+ * arguments\n" and exits with status 1).
+ */
 int main(int argc, char **argv)
 {
 	if (argc != 2)
