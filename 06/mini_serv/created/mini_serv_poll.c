@@ -75,10 +75,10 @@ void broadcast_msg(char *msg, int size, int sender_fd)
 	{
 		client = &g_clients[i];
 
-		if (i == sender_fd || !client->connected || !(g_server.poll_fds->revents & POLLOUT))
+		if (i == sender_fd || !client->connected || !(g_server.poll_fds[i].revents & POLLOUT))
 			continue ;
 
-		send(i, msg, size, 0);
+		send(i, msg, size, MSG_NOSIGNAL);
 	}
 }
 
@@ -105,6 +105,9 @@ void receive_client(void)
 
 	g_server.poll_fds[new_fd].fd = new_fd;
 	g_server.poll_fds[new_fd].events = POLLIN | POLLOUT;
+
+	int msg_size = sprintf(g_server.buf, "server: client %d just arrived\n", g_clients[new_fd].id);
+	broadcast_msg(g_server.buf, msg_size, new_fd);
 }
 
 void disconnect_client(int fd)
@@ -125,7 +128,7 @@ void disconnect_client(int fd)
 	if (fd == g_server.largest_fd)
 	{
 		int i = fd - 1;
-		while (i >= g_server.largest_fd && !g_clients[i].connected)
+		while (i >= g_server.fd && !g_clients[i].connected)
 			--i;
 		g_server.largest_fd = i;
 	}
@@ -186,6 +189,8 @@ void send_msgs(int fd)
 	while (client->buf_used > 0)
 	{
 		int client_msg_size = extract_msg(client->buf, client->buf_used);
+		if (client_msg_size <= 0)
+			break ;
 
 		int msg_size = sprintf(g_server.buf, "client %d: %s\n", client->id, client->buf);
 		broadcast_msg(g_server.buf, msg_size, fd);
@@ -210,7 +215,7 @@ int main(int argc, char **argv)
 {
 	if (argc != 2)
 	{
-		write (STDERR_FILENO, "Wrong amount of arguments\n", 26);
+		write (STDERR_FILENO, "Wrong number of arguments\n", 26);
 		return (1);
 	}
 
@@ -218,7 +223,7 @@ int main(int argc, char **argv)
 
 	while (1)
 	{
-		poll(g_server.poll_fds, g_server.largest_fd, 1000);
+		poll(g_server.poll_fds, g_server.largest_fd + 1, 1000);
 		receive_client();
 		route_msgs();
 	}
