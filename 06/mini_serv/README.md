@@ -66,38 +66,43 @@ The subject is in this readme and not in a separate file. All other files are or
 
 ### created
 
-Files I created and implemented for this exercise.
+Files created and implemented for this exercise:
 
-- `mini_serv.c` — the file to push
+- `mini_serv_select.c` — implementation using `select`
+- `mini_serv_poll.c` — implementation using `poll`
 
-### given
+Both implementations are functionally identical. The only difference is the multiplexing function used by the main loop.
 
-Files you will be given for this exercise, but should not be pushed.
+### usage
 
-- `main.c` — skeleton server. Uses forbidden functions and must not be part of the final program
-- `subject.en.txt` — the subject text
+Compile the `select` implementation:
 
-### root
-
-All files in here are extra files, that you do not need at all for this exercise. I created the `Makefile` for easier testing.
-
-## usage
-
-- compile using `make`, or `make re`
-  > this will create the executable file 'test'
-- execute the program `./test <port>`
-- connect with `nc 127.0.0.1 <port>`
-
-Examples:
 ```bash
-./test 8081
+make
+# or
+make serv_select
+./serv_select 8081
+```
+
+Compile the `poll` implementation:
+
+```bash
+make serv_poll
+./serv_poll 8081
+```
+
+Connect with:
+
+```bash
 nc 127.0.0.1 8081
 ```
 
 ## personal notes
 
-- one listening socket on 127.0.0.1, then a `select` loop
-- client id is the arrival order, starting at 0
-- bytes are buffered per client; each complete line is broadcast as `client %d: %s`
-- connect and disconnect notices go to the other clients
-- everything lives on the stack -> no leaks possible
+- Two implementations are available: one uses `select`, the other uses `poll`.
+- Apart from the multiplexing function, both implementations are almost identical.
+- One listening socket is bound to `127.0.0.1`.
+- Client IDs use the arrival order, starting at `0`.
+- Client messages are buffered per client and broadcast line by line.
+- Connect and disconnect notices are sent to the other clients.
+- Everything is stored on the stack, so there are no memory leaks.
