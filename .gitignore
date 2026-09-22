@@ -3,11 +3,9 @@
 *.o
 compile_flags.txt
 .kilo/*
+build/*
+test
 
 # exam 04
 04/vbc/res2/vbc
 04/vbc/res/vbc
-
-# exam 05
-test
-06/rendu/mini_serv/serv
