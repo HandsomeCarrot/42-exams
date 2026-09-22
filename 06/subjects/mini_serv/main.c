@@ -54,7 +54,6 @@ char *str_join(char *buf, char *add)
 	return (newbuf);
 }
 
-
 int main() {
 	int sockfd, connfd, len;
 	struct sockaddr_in servaddr, cli;
