@@ -6,7 +6,7 @@ CFLAGS := -Wall -Wextra -Werror -g -fsanitize=address,undefined,leak
 INCLUDE := -Icreated
 COMP := $(CC) $(CFLAGS) $(INCLUDE)
 
-SELECT_SRC := created/mini_serv.c
+SELECT_SRC := created/mini_serv_select.c
 POLL_SRC := created/mini_serv_poll.c
 
 B := build
