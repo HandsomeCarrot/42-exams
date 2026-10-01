@@ -9,7 +9,7 @@
 enum constants
 {
 	MAX_CLIENTS = FD_SETSIZE,
-	CLIENT_BUFFER_SIZE = 1024, // could be better if set to a higher value (e.g. 2^16 = 65536)
+	CLIENT_BUFFER_SIZE = 500000, // could be better if set to a higher value (e.g. 2^16 = 65536)
 	SERVER_MSGS_MAX_SIZE = 40,
 	SERVER_BUFFER_SIZE = (CLIENT_BUFFER_SIZE + SERVER_MSGS_MAX_SIZE),
 	CONNECTION_QUEUE_SIZE = 10
